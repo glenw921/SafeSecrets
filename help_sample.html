@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Help Modal</title>
+</head>
+<body>
+
+    <!--<button id="helpButton">Help</button>-->
+    <button id="helpButton" style="background:none; border:none; color:blue; text-decoration:underline; font-style:italic; cursor:pointer;">Help</button>
+
+    <!-- The Modal -->
+    <!--<div id="helpModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background-color:white; padding:20px; border:1px solid black; z-index:1000;">-->
+    <div id="helpModal" style="display:none; position:fixed; top:10px; left:10px; right:10px; bottom:10px; background-color:white; padding:20px; border:1px solid black; z-index:1000; overflow:auto;">
+        <button id="closeButton">Close</button>
+        <p>This is the help content. You can provide detailed instructions or information here.</p>
+        <p>This is the help content. You can provide detailed instructions or information here.</p>
+        <br />
+        <p>
+            The earliest discovery of Titanis fossils occurred in the winter of 1961/1962, when amateur archaeologists Benjamin Waller
+            and Robert Allen were searching for artifacts and fossils using scuba gear in the Santa Fe River on the border of Gilchrist and Columbia
+            Counties in Florida, United States.[1][2][3] The two collectors donated their discoveries to the Florida Museum of Natural History (UF)
+            later along with bones of equids, proboscideans, and many other Floridan fossils from the late Pliocene and latest Pleistocene.[1][4] Waller
+            and Allen's avian fossils consisted of only a distal tarsometatarsus (lower leg bone) and a pedal phalanx (toe bone), deposited under
+            specimen numbers UF 4108 and 4109 respectively. They remained without analysis in the museum's donations until they were recognized as
+            unique by paleontologist Clayton Ray in 1962. He noticed the avian features and giant size of the fossils, which led him to believe they
+            were from a phorusrhacid (or "terror bird", a group of large, predatory birds).[5][1] Ray also noted their stratigraphic origin; they were
+            found in a sedimentary layer containing the equid Nannippus and "bone-crushing" dog Borophagus, indicating that they originated from the
+            upper part of the Blancan stage (2.2–1.8 million years old).[6][7][1][8]
+        </p>
+    </div>
+
+    <script>
+        // Get the modal
+        var modal = document.getElementById("helpModal");
+
+        // Get the button that opens the modal
+        var btn = document.getElementById("helpButton");
+
+        // Get the button that closes the modal
+        var closeBtn = document.getElementById("closeButton");
+
+        // When the user clicks the button, open the modal
+        btn.onclick = function () {
+            modal.style.display = "block";
+        }
+
+        // When the user clicks the close button, close the modal
+        closeBtn.onclick = function () {
+            modal.style.display = "none";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+
+</body>
+</html>
