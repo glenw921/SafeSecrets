@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Access Example</title>
+</head>
+<body>
+    <input type="file" id="fileInput" title="Upload File" aria-label="Upload File">
+    <textarea id="fileContent" rows="10" cols="50" title="File Content (1)" aria-label="File Content (2)"></textarea>
+    <button id="saveButton">Save</button>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) { // Creating event handler to accomodate asynchronous file reading
+                    document.getElementById('fileContent').value = e.target.result;
+                };
+                reader.readAsText(file);  // reader.onload event handler will be called after this line.
+            }
+        });
+
+        document.getElementById('saveButton').addEventListener('click', async function () {
+            const content = document.getElementById('fileContent').value;
+            if ('showSaveFilePicker' in window) { // Using File System Access API for Chromium based browsers (Chrome, Edge, etc.)
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'untitled.txt',
+                    types: [{
+                        description: 'Text Files',
+                        accept: { 'text/plain': ['.txt'] }
+                    }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(content);
+                await writable.close();
+            } else { // Using Blob API for other browsers (Opera, Firefox, Safari, etc.)
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'untitled.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        });
+    </script>
+</body>
+</html>
