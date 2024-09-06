@@ -6,37 +6,71 @@
     <title>Internet Connection Status</title>
 </head>
 <body>
-    <!-- .......................................................................   -->
-    <!-- BEGIN: h01.............................................................   -->
-    <!-- .......................................................................   -->
+    <!-- .................................................................................   -->
+    <!-- BEGIN: h01: Warning for "device online"..........................................   -->
+    <!-- .................................................................................   -->
     <h1>Internet Connection Status</h1>
-    <p id="h01P_Status_Browser">Checking connection...</p>
-    <button id="h01Btn_CheckBrsrStatus" type="button">Check Connection</button>
-    <!-- .......................................................................   -->
-    <!--   END: h01.............................................................   -->
-    <!-- .......................................................................   -->
+    <p id="h01P_Status_Connection">Checking connection...</p>
+    <button id="h01Btn_CheckCnctnStatus" type="button">Check Connection</button>
+
+    <!-- The Modal for warning of internet connection -->
+    <div id="h01Div_OnlineWarningModal" style="display:none; position:fixed; top:10px; left:10px; right:10px; bottom:10px; background-color:white; padding:20px; border:1px solid black; z-index:1000; overflow:auto;">
+        <button id="h01btn_Ok">Ok</button>
+        <h1 style="color:red">STOP!</h1>
+        <p>Your device is currently internet connected. Do not use this app on an internet connected device.</p>
+        <p>When accessing critical secrets always assume your device has malware, and would transmit your secrets to criminals if ever given an internet connection.</p>
+    </div>
+    <!-- .................................................................................   -->
+    <!--   END: h01.......................................................................   -->
+    <!-- .................................................................................   -->
 
     <script>
-        //  .......................................................................
-        //  BEGIN: j01.............................................................
-        //  .......................................................................
-        function updateStatus() {
-            const statusDisplay = document.getElementById('h01P_Status_Browser');
+        //  .................................................................................
+        //  BEGIN: j01: JavaScript for h01...................................................
+        //  .................................................................................
+
+        // Get HTML elements related to internet connection warning modal div.
+        var j01Btn_CheckCnctnStatus = document.getElementById("h01Btn_CheckCnctnStatus"); // Get button that checks connection status.
+        var j01Div_OnlineWarningModal = document.getElementById("h01Div_OnlineWarningModal"); // Get the modal div.
+        var j01btn_Ok = document.getElementById("h01btn_Ok"); // Get the button that closes the modal div.
+
+        // When the user clicks the button, open the modal
+        j01Btn_CheckCnctnStatus.onclick = function () {
+            //j01Div_OnlineWarningModal.style.display = "block";
+            j01Div_OnlineWarningModal.style.display = navigator.onLine ? "block" : "none"; // but only if there is an internet connection.
+        }
+
+        // When the user clicks the close button, close the modal
+        j01btn_Ok.onclick = function () {
+            j01Div_OnlineWarningModal.style.display = "none";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == j01Div_OnlineWarningModal) {
+                j01Div_OnlineWarningModal.style.display = "none";
+            }
+        }
+
+        // Create event handler for checking internet connection
+        function j01_HandleConnectionStatus() {
+            const statusDisplay = document.getElementById('h01P_Status_Connection');
             statusDisplay.textContent = navigator.onLine ? "Online" : "Offline";
+            j01Div_OnlineWarningModal.style.display = navigator.onLine ? "block" : "none";
         }
 
         // Initial check
-        updateStatus();
+        j01_HandleConnectionStatus();
 
         // Listen for online and offline events
-        window.addEventListener('online', updateStatus);
-        window.addEventListener('offline', updateStatus);
+        window.addEventListener('online', j01_HandleConnectionStatus);
+        window.addEventListener('offline', j01_HandleConnectionStatus); // TODO: Delete this 
 
         // Check status when button is clicked
-        document.getElementById('h01Btn_CheckBrsrStatus').addEventListener('click', updateStatus);
-        //  .......................................................................
-        //    END: j01.............................................................
-        //  .......................................................................
+        document.getElementById('h01Btn_CheckCnctnStatus').addEventListener('click', j01_HandleConnectionStatus);
+        //  .................................................................................
+        //    END: j01.......................................................................
+        //  .................................................................................
 
     </script>
 </body>
