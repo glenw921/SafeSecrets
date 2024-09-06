@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internet Connection Status</title>
+</head>
+<body>
+    <!-- .......................................................................   -->
+    <!-- BEGIN: h01.............................................................   -->
+    <!-- .......................................................................   -->
+    <h1>Internet Connection Status</h1>
+    <p id="h01P_Status_Browser">Checking connection...</p>
+    <button id="h01Btn_CheckBrsrStatus">Check Connection</button>
+    <!-- .......................................................................   -->
+    <!--   END: h01.............................................................   -->
+    <!-- .......................................................................   -->
+
+    <script>
+        //  .......................................................................
+        //  BEGIN: j01.............................................................
+        //  .......................................................................
+        function updateStatus() {
+            const statusDisplay = document.getElementById('h01P_Status_Browser');
+            statusDisplay.textContent = navigator.onLine ? "Online" : "Offline";
+        }
+
+        // Initial check
+        updateStatus();
+
+        // Listen for online and offline events
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+
+        // Check status when button is clicked
+        document.getElementById('h01Btn_CheckBrsrStatus').addEventListener('click', updateStatus);
+        //  .......................................................................
+        //    END: j01.............................................................
+        //  .......................................................................
+
+    </script>
+</body>
+</html>
