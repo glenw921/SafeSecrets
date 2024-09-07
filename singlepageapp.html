@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Chromium Detection App</title>
+    <script>
+        // Register the service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.error('Service Worker registration failed', err));
+            });
+        }
+
+        // Function to detect Chromium-based browsers
+        function isChromiumBased() {
+            const userAgent = navigator.userAgent;
+            return userAgent.includes('Chrome') || userAgent.includes('Chromium') || userAgent.includes('CriOS') || userAgent.includes('Edg') || userAgent.includes('OPR');
+        }
+
+        // Display the result on the web page
+        window.addEventListener('load', () => {
+            const resultElement = document.getElementById('result');
+            if (resultElement) {
+                if (isChromiumBased()) {
+                    resultElement.textContent = 'You are using a Chromium-based browser.';
+                } else {
+                    resultElement.textContent = 'This web app is optimized for Chromium-based browsers. Please switch to a compatible browser for the best experience.';
+                }
+            } else {
+                console.error('Result element not found');
+            }
+        });
+
+        // Service worker code
+        const CACHE_NAME = 'offline-cache-v1';
+        const OFFLINE_URLS = [
+            'index.html'
+        ];
+
+        self.addEventListener('install', event => {
+            event.waitUntil(
+                caches.open(CACHE_NAME)
+                    .then(cache => cache.addAll(OFFLINE_URLS))
+                    .then(self.skipWaiting())
+            );
+        });
+
+        self.addEventListener('activate', event => {
+            event.waitUntil(
+                caches.keys().then(cacheNames => {
+                    return Promise.all(
+                        cacheNames.map(cacheName => {
+                            if (cacheName !== CACHE_NAME) {
+                                return caches.delete(cacheName);
+                            }
+                        })
+                    );
+                }).then(() => self.clients.claim())
+            );
+        });
+
+        self.addEventListener('fetch', event => {
+            event.respondWith(
+                caches.match(event.request)
+                    .then(response => {
+                        if (response) {
+                            return response;
+                        }
+                        return fetch(event.request).catch(() => {
+                            if (event.request.mode === 'navigate') {
+                                return caches.match('index.html');
+                            }
+                        });
+                    })
+            );
+        });
+    </script>
+</head>
+<body>
+    <h1>Offline Chromium Detection App</h1>
+    <p id="result">Checking browser compatibility...</p>
+    <p><a href="#" id="license-link">View License</a></p>
+
+    <script>
+        // Inline LICENSE content
+        const licenseContent = `
+                <h2>License</h2>
+                <p>Your license text goes here...</p>
+            `;
+
+        // Display LICENSE content in a new window
+        document.getElementById('license-link').addEventListener('click', (event) => {
+            event.preventDefault();
+            const licenseWindow = window.open('', '_blank');
+            licenseWindow.document.write(licenseContent);
+            licenseWindow.document.close();
+        });
+    </script>
+</body>
+</html>
