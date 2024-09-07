@@ -1,7 +1,8 @@
 const CACHE_NAME = 'offline-cache';
 const OFFLINE_URLS = [
     'index.html',
-    'app.js'
+    'app.js',
+    'LICENSE'
 ];
 
 self.addEventListener('install', event => {
