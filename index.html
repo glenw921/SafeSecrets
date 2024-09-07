@@ -4,72 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Offline Chromium Detection App</title>
-
     <script>
         //TODO: Clean up. This is currently a sample for how to run offline and detect browser type.
-        //TODO: Publish this app from GitHub Pages so that it will have HTTPS and be able to run offline.
         //TODO: Fix the "addEventListener" error shown in the console. See GitHub issue #1.
 
-        // Register the service worker
+        // Register the service worker to handle offline reload/refresh browser requests.
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(reg => console.log('Service Worker registered', reg))
-                .catch(err => console.error('Service Worker registration failed', err));
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.error('Service Worker registration failed', err));
+            });
         }
-
-        // Function to detect Chromium-based browsers
-        function isChromiumBased() {
-            const userAgent = navigator.userAgent;
-            return userAgent.includes('Chrome') || userAgent.includes('Chromium') || userAgent.includes('CriOS') || userAgent.includes('Edg') || userAgent.includes('OPR');
-        }
-
-        // Display the result on the web page
-        document.addEventListener('DOMContentLoaded', () => {
-            const resultElement = document.getElementById('result');
-            if (isChromiumBased()) {
-                resultElement.textContent = 'You are using a Chromium-based browser.';
-            } else {
-                resultElement.textContent = 'This web app is optimized for Chromium-based browsers. Please switch to a compatible browser for the best experience.';
-            }
-        });
     </script>
+    <script src="app.js" defer></script>
 </head>
-
 <body>
     <h1>Offline Chromium Detection App</h1>
     <p id="result">Checking browser compatibility...</p>
-
-    <!-- .......................................................................   -->
-    <!-- BEGIN: h00.............................................................   -->
-    <!-- .......................................................................   -->
-    <p id="h00P_Status_Connection">Checking connection...</p>
-    <button id="h00Btn_CheckCnctnStatus" type="button">Check Connection</button>
-    <!-- .......................................................................   -->
-    <!--   END: h00.............................................................   -->
-    <!-- .......................................................................   -->
-
-<script>
-    //  .......................................................................
-    //  BEGIN: j00.............................................................
-    //  .......................................................................
-    function updateStatus() {
-        const statusDisplay = document.getElementById('h00P_Status_Connection');
-        statusDisplay.textContent = navigator.onLine ? "Online" : "Offline";
-    }
-
-    // Initial check
-    updateStatus();
-
-    // Listen for online and offline events
-    window.addEventListener('online', updateStatus);
-    window.addEventListener('offline', updateStatus);
-
-    // Check status when button is clicked
-    document.getElementById('h00Btn_CheckBrsrStatus').addEventListener('click', updateStatus);
-    //  .......................................................................
-    //    END: j00.............................................................
-    //  .......................................................................
-
-</script>
 </body>
 </html>
