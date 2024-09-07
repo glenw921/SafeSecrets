@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Offline Chromium Detection App</title>
+
     <script>
         //TODO: Clean up. This is currently a sample for how to run offline and detect browser type.
+        //TODO: Publish this app from GitHub Pages so that it will have HTTPS and be able to run offline.
+        //TODO: Fix the "addEventListener" error shown in the console.
 
         // Register the service worker
         if ('serviceWorker' in navigator) {
@@ -31,8 +34,42 @@
         });
     </script>
 </head>
+
 <body>
     <h1>Offline Chromium Detection App</h1>
     <p id="result">Checking browser compatibility...</p>
+
+    <!-- .......................................................................   -->
+    <!-- BEGIN: h00.............................................................   -->
+    <!-- .......................................................................   -->
+    <p id="h00P_Status_Connection">Checking connection...</p>
+    <button id="h00Btn_CheckCnctnStatus" type="button">Check Connection</button>
+    <!-- .......................................................................   -->
+    <!--   END: h00.............................................................   -->
+    <!-- .......................................................................   -->
+
+<script>
+    //  .......................................................................
+    //  BEGIN: j00.............................................................
+    //  .......................................................................
+    function updateStatus() {
+        const statusDisplay = document.getElementById('h00P_Status_Connection');
+        statusDisplay.textContent = navigator.onLine ? "Online" : "Offline";
+    }
+
+    // Initial check
+    updateStatus();
+
+    // Listen for online and offline events
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+
+    // Check status when button is clicked
+    document.getElementById('h00Btn_CheckBrsrStatus').addEventListener('click', updateStatus);
+    //  .......................................................................
+    //    END: j00.............................................................
+    //  .......................................................................
+
+</script>
 </body>
 </html>
