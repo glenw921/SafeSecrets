@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline Chromium Detection App</title>
+    <title>SafeSecrets SPAv0001</title>
     <script>
         // Register the service worker
         if ('serviceWorker' in navigator) {
@@ -13,26 +13,6 @@
                     .catch(err => console.error('Service Worker registration failed', err));
             });
         }
-
-        //// Function to detect Chromium-based browsers
-        //function isChromiumBased() {
-        //    const userAgent = navigator.userAgent;
-        //    return userAgent.includes('Chrome') || userAgent.includes('Chromium') || userAgent.includes('CriOS') || userAgent.includes('Edg') || userAgent.includes('OPR');
-        //}
-
-        //// Display the result on the web page
-        //window.addEventListener('load', () => {
-        //    const resultElement = document.getElementById('result');
-        //    if (resultElement) {
-        //        if (isChromiumBased()) {
-        //            resultElement.textContent = 'You are using a Chromium-based browser.';
-        //        } else {
-        //            resultElement.textContent = 'This web app is optimized for Chromium-based browsers. Please switch to a compatible browser for the best experience.';
-        //        }
-        //    } else {
-        //        console.error('Result element not found');
-        //    }
-        //});
 
         // Service worker code
         const CACHE_NAME = 'offline-cache-v1';
@@ -80,16 +60,26 @@
     </script>
 </head>
 <body>
-    <h1>Offline Chromium Detection App SPAv001</h1>
+    <!-- .................................................................................   -->
+    <!-- BEGIN: h00: Warning for "device online"..........................................   -->
+    <!-- .................................................................................   -->
+    <h1>SafeSecrets SPAv001</h1>
     <p id="result">Checking browser compatibility...</p>
     <p><a href="#" id="license-link">View License</a></p>
+    <!-- .................................................................................   -->
+    <!--   END: h00.......................................................................   -->
+    <!-- .................................................................................   -->
 
     <script>
+        //  .................................................................................
+        //  BEGIN: j00: JavaScript for h00...................................................
+        //  .................................................................................
+
         // Inline LICENSE content
         const licenseContent = `
-                <h2>License</h2>
-                <p>Your license text goes here...</p>
-            `;
+                    <h2>License</h2>
+                    <p>Your license text goes here...</p>
+                `;
 
         // Display LICENSE content in a new window
         document.getElementById('license-link').addEventListener('click', (event) => {
@@ -118,7 +108,9 @@
                 console.error('Result element not found');
             }
         });
-
+        //  .................................................................................
+        //  BEGIN: j00: JavaScript for h00...................................................
+        //  .................................................................................
     </script>
 </body>
 </html>
