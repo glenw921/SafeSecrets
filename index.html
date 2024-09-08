@@ -16,10 +16,8 @@
         }
 
         // Service worker code
-        const CACHE_NAME = 'offline-cache-(v0.01.04)';
-        const OFFLINE_URLS = [
-            'index.html'
-        ];
+        const CACHE_NAME = 'offline-cache-(v0.01.05)';
+        const OFFLINE_URLS = ['/', '/index.html'];
 
         self.addEventListener('install', event => {
             event.waitUntil(
@@ -62,7 +60,7 @@
 </head>
 <body>
     <h1 style="text-align: center; font-size: 2em;">
-        SafeSecrets <span style="font-size: 0.5em;">(v0.01.04)</span>
+        SafeSecrets <span style="font-size: 0.5em;">(v0.01.05)</span>
     </h1>
 
     <div id="h01_for_j01">
