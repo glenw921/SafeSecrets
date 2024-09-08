@@ -3,31 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeSecrets - Navigation</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
+    <title>SafeSecrets</title>
+    
+    <script>
+        // Register the service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.error('Service Worker registration failed', err));
+            });
         }
 
-        a {
-            display: block;
-            margin: 20px;
-            font-size: 20px;
-            color: #007bff;
-            text-decoration: none;
-        }
+        // Service worker code
+        const CACHE_NAME = 'offline-cache-v1';
+        const OFFLINE_URLS = [
+            'index.html'
+        ];
 
-            a:hover {
-                text-decoration: underline;
-            }
-    </style>
+        self.addEventListener('install', event => {
+            event.waitUntil(
+                caches.open(CACHE_NAME)
+                    .then(cache => cache.addAll(OFFLINE_URLS))
+                    .then(self.skipWaiting())
+            );
+        });
+
+        self.addEventListener('activate', event => {
+            event.waitUntil(
+                caches.keys().then(cacheNames => {
+                    return Promise.all(
+                        cacheNames.map(cacheName => {
+                            if (cacheName !== CACHE_NAME) {
+                                return caches.delete(cacheName);
+                            }
+                        })
+                    );
+                }).then(() => self.clients.claim())
+            );
+        });
+
+        self.addEventListener('fetch', event => {
+            event.respondWith(
+                caches.match(event.request)
+                    .then(response => {
+                        if (response) {
+                            return response;
+                        }
+                        return fetch(event.request).catch(() => {
+                            if (event.request.mode === 'navigate') {
+                                return caches.match('index.html');
+                            }
+                        });
+                    })
+            );
+        });
+    </script>
 </head>
 <body>
-    <h1>Welcome to SafeSecrets navigation page</h1>
-    <p>Select a page to view:</p>
-    <a href="SafeSecrets.html">SafeSecrets</a>
-    <a href="SinglePageApp.html">Single Page App</a>
+    <h1>SafeSecrets</h1>
+    <h3>v0.01.3</h3>
+
+    <div id="h01_for_j01">
+        <h1>Internet Connection Status</h1>
+        <p id="h01P_Status_Connection">Checking connection...</p>
+        <button id="h01Btn_CheckCnctnStatus" type="button">Check Connection</button>
+
+        <!-- The Modal for warning of internet connection -->
+        <div id="h01Div_OnlineWarningModal" style="display:none; position:fixed; top:10px; left:10px; right:10px; bottom:10px; background-color:white; padding:20px; border:1px solid black; z-index:1000; overflow:auto;">
+            <button id="h01btn_Ok">Ok</button>
+            <h1 style="color:red">STOP!</h1>
+            <p>Your device is currently internet connected. Do not use this app on an internet connected device.</p>
+            <p>When accessing critical secrets always assume your device has malware, and would transmit your secrets to criminals if ever given an internet connection.</p>
+        </div>
+    </div>
+
+    <script id="j01_for_h01">
+        // Get HTML elements related to internet connection warning modal div.
+        var j01Btn_CheckCnctnStatus = document.getElementById("h01Btn_CheckCnctnStatus"); // Get button that checks connection status.
+        var j01Div_OnlineWarningModal = document.getElementById("h01Div_OnlineWarningModal"); // Get the modal div.
+        var j01btn_Ok = document.getElementById("h01btn_Ok"); // Get the button that closes the modal div.
+
+        // When the user clicks the button, open the modal
+        j01Btn_CheckCnctnStatus.onclick = function () {
+            //j01Div_OnlineWarningModal.style.display = "block";
+            j01Div_OnlineWarningModal.style.display = navigator.onLine ? "block" : "none"; // but only if there is an internet connection.
+        }
+
+        // When the user clicks the close button, close the modal
+        j01btn_Ok.onclick = function () {
+            j01Div_OnlineWarningModal.style.display = "none";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == j01Div_OnlineWarningModal) {
+                j01Div_OnlineWarningModal.style.display = "none";
+            }
+        }
+
+        // Create event handler for checking internet connection
+        function j01_HandleConnectionStatus() {
+            const statusDisplay = document.getElementById('h01P_Status_Connection');
+            statusDisplay.textContent = navigator.onLine ? "Online" : "Offline";
+            j01Div_OnlineWarningModal.style.display = navigator.onLine ? "block" : "none";
+        }
+
+        // Initial check
+        j01_HandleConnectionStatus();
+
+        // Listen for online and offline events
+        window.addEventListener('online', j01_HandleConnectionStatus);
+        window.addEventListener('offline', j01_HandleConnectionStatus); // TODO: Delete this
+
+        // Check status when button is clicked
+        document.getElementById('h01Btn_CheckCnctnStatus').addEventListener('click', j01_HandleConnectionStatus);
+    </script>
 </body>
 </html>
