@@ -8,22 +8,31 @@
 </head>
 <body>
     <h1>AES with CryptoJS</h1>
+
     <label for="password">Password:</label>
     <input type="text" id="password" value="123abc">
     <br><br>
-    <label for="plainText">Plain Text</label><br>
+
+    <label for="plainText">Plain Text                     </label><span id="plainTextCharCount"></span>
+    <br>
     <textarea id="plainText" rows="4" cols="50">Roses are red, Violets are blue, Sugar is sweet, And so are you.</textarea>
     <br>
     <button id="encryptBtn">Encrypt</button>
-    <label for="autoEncrypt">
-        <input type="checkbox" id="autoEncrypt"> Auto-Encrypt
-    </label>
+    <label for="autoEncrypt"><input type="checkbox" id="autoEncrypt"> Auto-Encrypt</label>
     <br><br>
-    <label for="encryptedText">Encrypted Text</label><br>
+
+    <label for="encryptedText">Encrypted Text</label>
+    <br>
     <textarea id="encryptedText" rows="8" cols="50" readonly></textarea>
+    <br>
+    <button id="decryptBtn">Decrypt</button>
     <br><br>
-    <label for="decryptedText">Decrypted Text</label><br>
+
+    <label for="decryptedText">Decrypted Text</label>
+    <br>
     <textarea id="decryptedText" rows="8" cols="50" readonly></textarea>
+    <br>
+    <span id="verifyDecryption"></span>
 
     <script>
         function getKey(password) {
@@ -31,25 +40,44 @@
         }
 
         function encryptText() {
-            const password = document.getElementById('password').value;
             const plainText = document.getElementById('plainText').value;
+            const password = document.getElementById('password').value;
             const key = getKey(password);
-            const encrypted = CryptoJS.AES.encrypt(plainText, key).toString();
-            document.getElementById('encryptedText').value = encrypted;
-            decryptText(encrypted, key);
+
+            const encryptedText = CryptoJS.AES.encrypt(plainText, key).toString();
+            document.getElementById('encryptedText').value = encryptedText;
+            document.getElementById('decryptedText').value = '';
+            document.getElementById('verifyDecryption').textContent = 'Awaiting decryption...';
         }
 
-        function decryptText(encrypted, key) {
-            const decrypted = CryptoJS.AES.decrypt(encrypted, key).toString(CryptoJS.enc.Utf8);
-            document.getElementById('decryptedText').value = decrypted;
+        function decryptText() {
+            const encryptedText = document.getElementById('encryptedText').value;
+            const password = document.getElementById('password').value;
+            const key = getKey(password);
+
+            const decryptedText = CryptoJS.AES.decrypt(encryptedText, key).toString(CryptoJS.enc.Utf8);
+            document.getElementById('decryptedText').value = decryptedText;
+
+            // Verify decryption success
+            const plainText = document.getElementById('plainText').value;
+            if (plainText === decryptedText) {
+                document.getElementById('verifyDecryption').textContent = 'Decryption successful!';
+            } else {
+                document.getElementById('verifyDecryption').textContent = 'Decryption failed!';
+            }
         }
 
+        // Add event listeners................................................................
         document.getElementById('encryptBtn').addEventListener('click', encryptText);
+        document.getElementById('decryptBtn').addEventListener('click', decryptText);
 
         document.getElementById('plainText').addEventListener('input', function () {
             if (document.getElementById('autoEncrypt').checked) {
                 encryptText();
             }
+            document.getElementById('plainTextCharCount').textContent = ' (' + document.getElementById('plainText').value.length + ' characters)';
+            document.getElementById('decryptedText').value = '';
+            document.getElementById('verifyDecryption').textContent = 'Awaiting encryption...';
         });
     </script>
 </body>
