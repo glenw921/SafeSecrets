@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSA with JSEncrypt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <h1>RSA with JSEncrypt</h1>
+    <label for="password">Password:</label>
+    <input type="text" id="password" value="123abc"><br><br>
+    <label for="plainText">Plain Text:</label>
+    <textarea id="plainText" rows="4" cols="50">Roses are red, Violets are blue, Sugar is sweet, And so are you.</textarea><br><br>
+    <button id="encryptButton">Encrypt</button><br><br>
+    <label for="encryptedText">Encrypted Text:</label>
+    <textarea id="encryptedText" rows="4" cols="50" readonly></textarea><br><br>
+    <label for="decryptedText">Decrypted Text:</label>
+    <textarea id="decryptedText" rows="4" cols="50" readonly></textarea><br><br>
+    <label for="autoEncrypt">Auto-Encrypt:</label>
+    <input type="checkbox" id="autoEncrypt"><br><br>
+
+    <script>
+        debugger
+        const rsa = new JSEncrypt({ default_key_size: 2048 });
+        const publicKey = rsa.getPublicKey();
+        const privateKey = rsa.getPrivateKey();
+
+        function encryptPrivateKey(privateKey, password) {
+            const encrypted = CryptoJS.AES.encrypt(privateKey, password).toString();
+            return encrypted;
+        }
+
+        function decryptPrivateKey(encryptedPrivateKey, password) {
+            const decrypted = CryptoJS.AES.decrypt(encryptedPrivateKey, password);
+            return decrypted.toString(CryptoJS.enc.Utf8);
+        }
+
+        function encryptText(plainText, publicKey) {
+            const rsa = new JSEncrypt();
+            rsa.setPublicKey(publicKey);
+            const encrypted = rsa.encrypt(plainText);
+            return encrypted;
+        }
+
+        function decryptText(encryptedText, privateKey) {
+            const rsa = new JSEncrypt();
+            rsa.setPrivateKey(privateKey);
+            const decrypted = rsa.decrypt(encryptedText);
+            return decrypted;
+        }
+
+        document.getElementById('encryptButton').addEventListener('click', function () {
+            debugger
+            const password = document.getElementById('password').value;
+            const plainText = document.getElementById('plainText').value;
+            const encryptedPrivateKey = encryptPrivateKey(privateKey, password);
+            const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey, password);
+            const encryptedText = encryptText(plainText, publicKey);
+            document.getElementById('encryptedText').value = encryptedText;
+            const decryptedText = decryptText(encryptedText, decryptedPrivateKey);
+            document.getElementById('decryptedText').value = decryptedText;
+        });
+
+        document.getElementById('plainText').addEventListener('input', function () {
+            if (document.getElementById('autoEncrypt').checked) {
+                const password = document.getElementById('password').value;
+                const plainText = document.getElementById('plainText').value;
+                const encryptedPrivateKey = encryptPrivateKey(privateKey, password);
+                const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey, password);
+                const encryptedText = encryptText(plainText, publicKey);
+                document.getElementById('encryptedText').value = encryptedText;
+                const decryptedText = decryptText(encryptedText, decryptedPrivateKey);
+                document.getElementById('decryptedText').value = decryptedText;
+            }
+        });
+    </script>
+</body>
+</html>

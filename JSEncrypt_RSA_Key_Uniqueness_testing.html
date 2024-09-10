@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing Uniqueness of JSEncrypt RSA Key Pairs</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
+</head>
+<body>
+    <h1>Testing Uniqueness of JSEncrypt RSA Key Pairs</h1>
+    <label for="keyCount">Key Count:</label>
+    <input type="number" id="keyCount" min="1" max="1000" value="10"><br><br>
+    <button id="generateKeysButton" type="button">Generate Keys</button>
+    <span id="status">Status: 0</span><br><br>
+    <label for="privateKeys">Private Keys:</label><br>
+    <textarea id="privateKeys" rows="20" cols="80" readonly></textarea><br><br>
+    <label for="publicKeys">Public Keys:</label><br>
+    <textarea id="publicKeys" rows="20" cols="80" readonly></textarea><br><br>
+
+    <script>
+        document.getElementById('generateKeysButton').addEventListener('click', function () {
+            const keyCount = parseInt(document.getElementById('keyCount').value);
+            const privateParts = [];
+            const publicParts = [];
+            const privateKeysTextarea = document.getElementById('privateKeys');
+            const publicKeysTextarea = document.getElementById('publicKeys');
+            const statusLabel = document.getElementById('status');
+
+            privateKeysTextarea.value = '';
+            publicKeysTextarea.value = '';
+            statusLabel.textContent = 'Status: 0';
+
+            for (let i = 0; i < keyCount; i++) {
+                setTimeout(() => {
+                    statusLabel.textContent = 'Status: ' + (i + 1);
+
+                    const rsa = new JSEncrypt({ default_key_size: 2048 });
+                    const rsaKey = rsa.getKey();
+                    const privateKeyContent = rsaKey.getPrivateBaseKeyB64();
+                    const publicKeyContent = rsaKey.getPublicBaseKeyB64();
+
+                    //const privatePart = privateKeyContent.slice(0, 30) + privateKeyContent.slice(-30);
+                    //const publicPart = publicKeyContent.slice(0, 30) + publicKeyContent.slice(-30);
+                    const privatePart = privateKeyContent.slice(-60);
+                    const publicPart = publicKeyContent.slice(-60);
+
+                    if (privateParts.includes(privatePart)) {
+                        alert('Duplicate private key part found: ' + privatePart);
+                    } else {
+                        privateParts.push(privatePart);
+                        privateKeysTextarea.value += privatePart + '\n';
+                    }
+
+                    if (publicParts.includes(publicPart)) {
+                        alert('Duplicate public key part found: ' + publicPart);
+                    } else {
+                        publicParts.push(publicPart);
+                        publicKeysTextarea.value += publicPart + '\n';
+                    }
+
+                    if (i === keyCount - 1) {
+                        statusLabel.textContent += ' DONE!!';
+                    }
+                }, 0);
+            }
+        });
+    </script>
+
+</body>
+</html>
