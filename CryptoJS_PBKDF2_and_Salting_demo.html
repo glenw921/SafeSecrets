@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AES with CryptoJS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <style>
+        input {
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
     <h1>AES with CryptoJS</h1>
@@ -16,7 +21,7 @@
     <input type="text" id="salt" readonly>
     <br><br>
     <label for="pbkdf2Hash">PBKDF2 Hash:</label>
-    <input type="text" id="pbkdf2Hash"  readonly>
+    <input type="text" id="pbkdf2Hash" readonly>
     <br><br>
     <label for="plainText">Plain Text</label><br>
     <textarea id="plainText" rows="4" cols="50">Roses are red, Violets are blue, Sugar is sweet, And so are you.</textarea>
@@ -31,59 +36,66 @@
     <textarea id="decryptedText" rows="8" cols="50" readonly></textarea>
 
     <script>
-        debugger
+        // IMPORTANT RESULTS: Entering a mismatch password or salt will cause unhandled exception apon decryption attempt.
+        // This is undesirable for security because it tells attackers to try again with a different password or salt.
+
+        //debugger
 
         function generateSalt(length) {
-            return CryptoJS.lib.WordArray.random(length).toString();
+            return CryptoJS.lib.WordArray.random(length).toString(); // Generates 'length' 32-bit bytes containing random values.
         }
 
-        function hashPassword() {
-            debugger
-            const password = document.getElementById('password').value;
-            const salt = generateSalt(16);
-            const iterations = 1000; // 1000 is the default value
+        function newPBKDF2Hash(password, salt) {
+            //debugger
+            const iterations = 1000;
             const keySize = 256 / 32; // 256 bits
 
             const pbkdf2Hash = CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(salt), {
                 keySize: keySize,
                 iterations: iterations
-            }).toString();
+            });
+
+            document.getElementById('pbkdf2Hash').value = pbkdf2Hash.toString();
+
+            //return CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(salt), {
+            //    keySize: keySize,
+            //    iterations: iterations
+            //}).toString();
+            return pbkdf2Hash.toString();
+        }
+
+        function hashPassword() {
+            //debugger
+            const password = document.getElementById('password').value;
+            const salt = generateSalt(16); // Creates a NEW salt each time the password is hashed. This won't work to decrypt PREVIOUSLY encrypted text.
+            const pbkdf2Hash = newPBKDF2Hash(password, salt);
 
             document.getElementById('salt').value = salt;
-            document.getElementById('pbkdf2Hash').value = pbkdf2Hash;
+            //document.getElementById('pbkdf2Hash').value = pbkdf2Hash;
         }
 
         function encryptText() {
-            debugger
+            //debugger
             const password = document.getElementById('password').value;
             const salt = document.getElementById('salt').value;
-            const pbkdf2Hash = document.getElementById('pbkdf2Hash').value;
+ //           const key = newPBKDF2Hash(password, salt); // Creates a new hash, but it will work same as PRIOR hash so long as password and salt are the same.
+            const key = password; // This is just a test.
             const plainText = document.getElementById('plainText').value;
 
-            const key = CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(salt), {
-                keySize: 256 / 32,
-                iterations: 1000
-            });
-
-            //const encrypted = CryptoJS.AES.encrypt(plainText, key).toString();
-            const encrypted = CryptoJS.AES.encrypt(plainText, key.toString()).toString();
+            const encrypted = CryptoJS.AES.encrypt(plainText, key).toString();
             document.getElementById('encryptedText').value = encrypted;
         }
 
         function decryptText() {
-            debugger
+            //debugger
             const password = document.getElementById('password').value;
             const salt = document.getElementById('salt').value;
-            const pbkdf2Hash = document.getElementById('pbkdf2Hash').value;
+  //          const key = newPBKDF2Hash(password, salt); // Creates a new hash, but it will work same as PRIOR hash so long as password and salt are the same.
+            const key = password; // This is just a test.
             const encryptedText = document.getElementById('encryptedText').value;
 
-            const key = CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(salt), {
-                keySize: 256 / 32,
-                iterations: 1000
-            });
-
-            //const decrypted = CryptoJS.AES.decrypt(encryptedText, key).toString(CryptoJS.enc.Utf8);
-            const decrypted = CryptoJS.AES.decrypt(encryptedText, key.toString()).toString(CryptoJS.enc.Utf8);
+            const decryptedThing = CryptoJS.AES.decrypt(encryptedText, key);
+            const decrypted = decryptedThing.toString(CryptoJS.enc.Utf8);
             document.getElementById('decryptedText').value = decrypted;
         }
 
