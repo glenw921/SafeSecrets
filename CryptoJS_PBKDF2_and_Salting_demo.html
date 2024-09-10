@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AES with CryptoJS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+</head>
+<body>
+    <h1>AES with CryptoJS</h1>
+    <label for="password">Password:</label>
+    <input type="text" id="password" value="123abc">
+    <button id="hashPasswordBtn">Hash Password</button>
+    <br><br>
+    <label for="salt">Salt:</label>
+    <input type="text" id="salt" readonly>
+    <br><br>
+    <label for="pbkdf2Hash">PBKDF2 Hash:</label>
+    <input type="text" id="pbkdf2Hash"  readonly>
+    <br><br>
+    <label for="plainText">Plain Text</label><br>
+    <textarea id="plainText" rows="4" cols="50">Roses are red, Violets are blue, Sugar is sweet, And so are you.</textarea>
+    <br>
+    <button id="encryptBtn">Encrypt</button>
+    <button id="decryptBtn">Decrypt</button>
+    <br><br>
+    <label for="encryptedText">Encrypted Text</label><br>
+    <textarea id="encryptedText" rows="8" cols="50" readonly></textarea>
+    <br><br>
+    <label for="decryptedText">Decrypted Text</label><br>
+    <textarea id="decryptedText" rows="8" cols="50" readonly></textarea>
+
+    <script>
+        debugger
+
+        function generateSalt(length) {
+            return CryptoJS.lib.WordArray.random(length).toString();
+        }
+
+        function hashPassword() {
+            debugger
+            const password = document.getElementById('password').value;
+            const salt = generateSalt(16);
+            const iterations = 1000; // 1000 is the default value
+            const keySize = 256 / 32; // 256 bits
+
+            const pbkdf2Hash = CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(salt), {
+                keySize: keySize,
+                iterations: iterations
+            }).toString();
+
+            document.getElementById('salt').value = salt;
+            document.getElementById('pbkdf2Hash').value = pbkdf2Hash;
+        }
+
+        function encryptText() {
+            debugger
+            const password = document.getElementById('password').value;
+            const salt = document.getElementById('salt').value;
+            const pbkdf2Hash = document.getElementById('pbkdf2Hash').value;
+            const plainText = document.getElementById('plainText').value;
+
+            const key = CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(salt), {
+                keySize: 256 / 32,
+                iterations: 1000
+            });
+
+            //const encrypted = CryptoJS.AES.encrypt(plainText, key).toString();
+            const encrypted = CryptoJS.AES.encrypt(plainText, key.toString()).toString();
+            document.getElementById('encryptedText').value = encrypted;
+        }
+
+        function decryptText() {
+            debugger
+            const password = document.getElementById('password').value;
+            const salt = document.getElementById('salt').value;
+            const pbkdf2Hash = document.getElementById('pbkdf2Hash').value;
+            const encryptedText = document.getElementById('encryptedText').value;
+
+            const key = CryptoJS.PBKDF2(password, CryptoJS.enc.Hex.parse(salt), {
+                keySize: 256 / 32,
+                iterations: 1000
+            });
+
+            //const decrypted = CryptoJS.AES.decrypt(encryptedText, key).toString(CryptoJS.enc.Utf8);
+            const decrypted = CryptoJS.AES.decrypt(encryptedText, key.toString()).toString(CryptoJS.enc.Utf8);
+            document.getElementById('decryptedText').value = decrypted;
+        }
+
+        document.getElementById('hashPasswordBtn').addEventListener('click', hashPassword);
+        document.getElementById('encryptBtn').addEventListener('click', encryptText);
+        document.getElementById('decryptBtn').addEventListener('click', decryptText);
+    </script>
+</body>
+</html>
