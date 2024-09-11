@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loop in JS while updating UI</title>
+</head>
+<body>
+    <div id="h01_for_j01">
+        <button id="h01Btn_PWSearch" type="button" title="Runs a search testing passwords until encrypted text is decrypted.">Password Search</button>
+        <button id="h01Btn_PWSearchStop" type="button" title="Stop password search.">Stop</button>
+        <br>
+        <div style="width: 500px; position: relative;">
+            <span id="h01Sp_RunSeconds" style="float: left;">Run Time: 00:00:00</span>
+            <span id="h01Sp_PWAttempts" style="position: absolute; left: 50%; transform: translateX(-50%);">PWAttempts</span>
+        </div>
+    </div><!--END h01_for_j01-->
+
+    <script id="j01_for_h01">
+        let stopLoop = false;
+        let pwAttempts = 0;
+        let startTime;
+
+        const h01Sp_RunSeconds = document.getElementById('h01Sp_RunSeconds');
+        const h01Sp_PWAttempts = document.getElementById('h01Sp_PWAttempts');
+
+        function formatTime(seconds) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function runLoop() {
+            if (stopLoop) return;
+
+            const currentTime = new Date();
+            const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+            h01Sp_RunSeconds.textContent = `Run Time: ${formatTime(elapsedTime)}`;
+
+            pwAttempts++;
+            h01Sp_PWAttempts.textContent = `Attempts: ${pwAttempts}`;
+
+            setTimeout(runLoop, 1); // Schedule the next execution with a 1-millisecond delay
+        }
+
+        document.getElementById('h01Btn_PWSearch').addEventListener('click', function () {
+            stopLoop = false;
+
+            startTime = new Date();
+            pwAttempts = 0;
+            h01Sp_RunSeconds.textContent = 'Run Time: 00:00:00';
+            h01Sp_PWAttempts.textContent = pwAttempts;
+
+            runLoop(); // Start the loop
+        });
+
+        document.getElementById('h01Btn_PWSearchStop').addEventListener('click', function () {
+            stopLoop = true;
+        });
+    </script><!--END j01_for_h01-->
+</body>
+</html>
