@@ -9,21 +9,34 @@
     <!--TODO: Change CryptoJS to version 4.2.0-->
 </head>
 <body>
-    <h1>RSA with JSEncrypt</h1>
-    <label for="password">Password:</label>
-    <input type="text" id="password" value="123abc"><br><br>
-    <label for="plainText">Plain Text:</label>
-    <textarea id="plainText" rows="4" cols="50">Roses are red, Violets are blue, Sugar is sweet, And so are you.</textarea><br><br>
-    <button id="encryptButton">Encrypt</button><br><br>
-    <label for="encryptedText">Encrypted Text:</label>
-    <textarea id="encryptedText" rows="4" cols="50" readonly></textarea><br><br>
-    <label for="decryptedText">Decrypted Text:</label>
-    <textarea id="decryptedText" rows="4" cols="50" readonly></textarea><br><br>
-    <label for="autoEncrypt">Auto-Encrypt:</label>
-    <input type="checkbox" id="autoEncrypt"><br><br>
+    <div id="h02_for_j01">
+        <h1>RSA with JSEncrypt</h1>
+        <label for="h01In_Password">Password:</label>
+        <input type="text" id="h01In_Password" value="123abc">
+        <br><br>
+        <label for="h01In_PlainText">Plain Text:</label>
+        <textarea id="h01In_PlainText" rows="4" cols="50">Roses are red, Violets are blue, Sugar is sweet, And so are you.</textarea>
+        <br><br>
+        <button id="h01Btn_EncryptButton">Encrypt</button><br><br>
+        <label for="h01TA_EncryptedText">Encrypted Text:</label>
+        <textarea id="h01TA_EncryptedText" rows="4" cols="50" readonly></textarea>
+        <br><br>
+        <label for="h01TA_DecryptedText">Decrypted Text:</label>
+        <textarea id="h01TA_DecryptedText" rows="4" cols="50" readonly></textarea>
+        <br><br>
+        <label for="h01CB_AutoEncrypt">Auto-Encrypt:</label>
+        <input type="checkbox" id="h01CB_AutoEncrypt">
+        <br><br>
+    </div> <!--END h02_for_j01-->
+    <script id="j01_for_h01">
+        // Cache DOM elements in local variables..................................
+        const h01In_Password = document.getElementById('h01In_Password');
+        const h01In_PlainText = document.getElementById('h01In_PlainText');
+        const h01TA_EncryptedText = document.getElementById('h01TA_EncryptedText');
+        const h01TA_DecryptedText = document.getElementById('h01TA_DecryptedText');
+        const h01CB_AutoEncrypt = document.getElementById('h01CB_AutoEncrypt');
 
-    <script>
-        debugger
+        // Create RSA key pair.............................................
         const rsa = new JSEncrypt({ default_key_size: 2048 });
         const publicKey = rsa.getPublicKey();
         const privateKey = rsa.getPrivateKey();
@@ -52,30 +65,24 @@
             return decrypted;
         }
 
-        document.getElementById('encryptButton').addEventListener('click', function () {
-            debugger
-            const password = document.getElementById('password').value;
-            const plainText = document.getElementById('plainText').value;
+        function doEncryption() {
+            const password = h01In_Password.value;
+            const plainText = h01In_PlainText.value;
             const encryptedPrivateKey = encryptPrivateKey(privateKey, password);
             const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey, password);
             const encryptedText = encryptText(plainText, publicKey);
-            document.getElementById('encryptedText').value = encryptedText;
+            h01TA_EncryptedText.value = encryptedText;
             const decryptedText = decryptText(encryptedText, decryptedPrivateKey);
-            document.getElementById('decryptedText').value = decryptedText;
-        });
+            h01TA_DecryptedText.value = decryptedText;
+        }       
 
-        document.getElementById('plainText').addEventListener('input', function () {
-            if (document.getElementById('autoEncrypt').checked) {
-                const password = document.getElementById('password').value;
-                const plainText = document.getElementById('plainText').value;
-                const encryptedPrivateKey = encryptPrivateKey(privateKey, password);
-                const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey, password);
-                const encryptedText = encryptText(plainText, publicKey);
-                document.getElementById('encryptedText').value = encryptedText;
-                const decryptedText = decryptText(encryptedText, decryptedPrivateKey);
-                document.getElementById('decryptedText').value = decryptedText;
+        document.getElementById('h01Btn_EncryptButton').addEventListener('click', doEncryption);    
+
+        document.getElementById('h01In_PlainText').addEventListener('input', function () {
+            if (h01CB_AutoEncrypt.checked) {
+                doEncryption();
             }
         });
-    </script>
+    </script><!--END j01_for_h01-->
 </body>
 </html>
