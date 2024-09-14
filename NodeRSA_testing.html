@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSA Tek with NodeRSA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/node-rsa/1.1.1/NodeRSA.min.js"></script>
+</head>
+<body>
+    <h1>Testing RSA Key Generation with NodeRSA</h1>
+
+    <div id="h01_for_j01">
+        <label for="h01In_Password">Password:</label><input type="text" id="h01In_Password" value="123abc">
+        <label for="h01CB_AutoGenNewKeys"><input type="checkbox" id="h01CB_AutoGenNewKeys">Auto-Gen keys</label>
+        <br><br>
+
+        <button id="h01Btn_GenPBKDF2" type="button" style="width: 120px; vertical-align: middle;">Gen PBKDF2</button>
+        <textarea id="h01TA_PBKDF2" rows="1" cols="33" readonly style="vertical-align: middle;"></textarea>
+        <br />
+        <button id="h01Btn_GenPublicKey" type="button" style="width: 120px; vertical-align: middle;">Gen Public Key</button>
+        <textarea id="h01TA_PublicKey" rows="1" cols="33" readonly style="vertical-align: middle;"></textarea>
+        <br />
+        <button id="h01Btn_GenPrivateKey" type="button" style="width: 120px; vertical-align: middle;">Gen Private Key</button>
+        <textarea id="h01TA_PrivateKey" rows="1" cols="33" readonly style="vertical-align: middle;"></textarea>
+        <br><br>
+
+        <label for="h01TA_PlainText">Plain Text </label><span id="h01Sp_CharCount"></span>
+        <br>
+        <textarea id="h01TA_PlainText" rows="4" cols="50">Roses are red, Violets are blue, Sugar is sweet, And so are you.</textarea>
+        <br><br>
+
+        <label for="h01TA_EncryptedText">Encrypted Text</label><span style="display: inline-block; width: 80px;"></span>
+        <button id="h01Btn_EncryptBtn" type="button">Encrypt Text</button>
+        <label for="h01CB_AutoEncrypt"><input type="checkbox" id="h01CB_AutoEncrypt">Auto-Encrypt</label>
+        <br>
+        <textarea id="h01TA_EncryptedText" rows="8" cols="50" readonly></textarea>
+        <br><br>
+
+        <label for="h01TA_DecryptedText">Decrypted Text</label><span style="display: inline-block; width: 80px;"></span>
+        <button id="h01Btn_DecryptBtn" type="button">Decrypt Text</button>
+        <label for="h01CB_AutoDecrypt"><input type="checkbox" id="h01CB_AutoDecrypt">Auto-Decrypt</label>
+        <br>
+        <textarea id="h01TA_DecryptedText" rows="8" cols="50" readonly></textarea>
+        <br>
+        <span id="h01Sp_VerifyDecryption"></span>
+    </div><!--END h01_for_j01-->
+
+    <script id="j01_for_h01">
+        debugger; console.log('Hello from j01_for_h01');
+
+        const h01TA_PlainText = document.getElementById('h01TA_PlainText');
+        const h01TA_EncryptedText = document.getElementById('h01TA_EncryptedText');
+        const h01TA_DecryptedText = document.getElementById('h01TA_DecryptedText');
+        const h01Sp_VerifyDecryption = document.getElementById('h01Sp_VerifyDecryption');
+
+        const h01Sp_RunSeconds = document.getElementById('h01Sp_RunSeconds');
+        const h01Sp_PWAttempts = document.getElementById('h01Sp_PWAttempts');
+        const h01Sp_PasswordGuess = document.getElementById('h01Sp_PasswordGuess');
+
+        // BEGIN: Password generation and testing related code.............................................
+        const minCharCode = 48; // 128; // 33; // Must be between 128 and 2047, inclusively. All chars in this range work in CryptoJS.AES functions.
+        const maxCharCode = 57; // 2047; // 126; // Must be between 128 and 2047, inclusively. All chars in this range work in CryptoJS.AES functions.
+
+        //function isAllowedCharacter(charCode) {
+        //    return (charCode > 127 && charCode < 2048);
+        //}
+
+        function buildValidCharList() {
+            // Allocate the array
+            const validCharacters = new Array(maxCharCode + 1 - minCharCode);
+
+            // Populate the array
+            let index = 0;
+            for (let i = minCharCode; i <= maxCharCode; i++) {
+                validCharacters[index] = String.fromCharCode(i);
+                index++;
+            }
+
+            return validCharacters;
+        }
+
+        const validPWChars = buildValidCharList();
+        let pwGuess = '';
+
+        function getNextPassword(aPassword) {
+            if (aPassword.length === 0) {
+                return validPWChars[0];
+            }
+
+            const lastChar = aPassword.charAt(aPassword.length - 1);
+            const lastCharCode = lastChar.charCodeAt(0);
+            let nextPassword = aPassword.substring(0, aPassword.length - 1);
+
+            if (lastCharCode < maxCharCode) {  // For any character other than the very last one, get the next character.
+                let nextCharIndex = 1 + lastCharCode - minCharCode; // the smallest possible lastCharCode is minCharCode, located at index 0.
+                nextPassword += validPWChars[nextCharIndex];
+            } else { // Must advance ancestor character and append first valid character.
+                nextPassword = getNextPassword(nextPassword) + validPWChars[0];
+            }
+
+            return nextPassword;
+        }
+        // END: Password generation and testing related code...............................................
+
+
+        // BEGIN: loop management code.......................................................
+        let stopLoop = false;
+        let pwAttempts = 0;
+        let startTime;
+
+        function formatTime(seconds) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function runLoop() {
+            if (stopLoop) return;
+
+            const currentTime = new Date();
+            const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+            h01Sp_RunSeconds.textContent = `Run Time: ${formatTime(elapsedTime)}`;
+
+            pwAttempts++;
+            h01Sp_PWAttempts.textContent = `Attempts: ${pwAttempts}`;
+
+            pwGuess = getNextPassword(pwGuess);
+            h01Sp_PasswordGuess.textContent = `Password Guess: ${pwGuess}`;
+
+            decryptWithPW(pwGuess);
+
+            if (h01Sp_VerifyDecryption.textContent === 'Decryption successful!') {
+                stopLoop = true;
+            }
+
+            setTimeout(runLoop, 1); // Schedule the next execution with a 1-millisecond delay
+        }
+
+        document.getElementById('h01Btn_PWSearch').addEventListener('click', function () {
+            stopLoop = false;
+
+            startTime = new Date();
+            pwAttempts = 0;
+            pwGuess = '';
+
+            runLoop(); // Start the loop
+        });
+
+        document.getElementById('h01Btn_PWSearchStop').addEventListener('click', function () {
+            stopLoop = true;
+        });
+        // END: loop management code...........................................................
+
+
+        // AES encryption and decryption functions.............................................
+        function getKey(password) {
+            return CryptoJS.SHA256(password).toString();
+        }
+
+        function encryptText() {
+            const plainText = document.getElementById('h01TA_PlainText').value;
+            const password = document.getElementById('h01In_Password').value;
+            const key = getKey(password);
+
+            const encryptedText = CryptoJS.AES.encrypt(plainText, key).toString();
+            document.getElementById('h01TA_EncryptedText').value = encryptedText;
+            document.getElementById('h01TA_DecryptedText').value = '';
+            document.getElementById('h01Sp_VerifyDecryption').textContent = 'Awaiting decryption...';
+        }
+
+        function decryptText() {
+            const password = document.getElementById('h01In_Password').value;
+            decryptWithPW(password);
+
+        }
+
+        function decryptWithPW(password) {
+            const encryptedText = h01TA_EncryptedText.value;
+            const key = getKey(password);
+
+            let decryptedText = '';
+
+            try {
+                decryptedText = CryptoJS.AES.decrypt(encryptedText, key).toString(CryptoJS.enc.Utf8);
+            }catch (error) {
+                decryptedText = 'Error: ' + error.message;
+            } finally {
+                h01TA_DecryptedText.value = decryptedText;
+            }
+
+            // Verify decryption success
+            if (h01TA_PlainText.value === decryptedText) {
+                h01Sp_VerifyDecryption.textContent = 'Decryption successful!';
+            } else {
+                h01Sp_VerifyDecryption.textContent = 'Decryption failed!';
+            }
+        }
+
+        // Add event listeners................................................................
+        document.getElementById('h01Btn_EncryptBtn').addEventListener('click', encryptText);
+        document.getElementById('h01Btn_DecryptBtn').addEventListener('click', decryptText);
+
+        document.getElementById('h01TA_PlainText').addEventListener('input', function () {
+            if (document.getElementById('h01CB_AutoEncrypt').checked) {
+                encryptText();
+            }
+
+            const plainTextLen = document.getElementById('h01TA_PlainText').value.length;
+            document.getElementById('h01Btn_PWSearch').disabled = (plainTextLen < 1); // Disable button if no text.
+
+            document.getElementById('h01Sp_CharCount').textContent = ' (' + plainTextLen + ' characters)';
+            document.getElementById('h01TA_DecryptedText').value = '';
+            document.getElementById('h01Sp_VerifyDecryption').textContent = 'Awaiting encryption...';
+        });
+    </script><!--END j01_for_h01-->
+</body>
+</html>
