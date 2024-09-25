@@ -1,0 +1,100 @@
+
+### **Updated SafeSecrets Project Requirements**
+
+---
+
+### **STRUCTURE & TECH**
+1. **Written in HTML, JavaScript, and JSON**. Avoid CSS whenever there is a sufficient alternative.
+2. Use as **few separate files as possible**. Ideally, all code would be in the index.html file, except for the Wasm libraries.
+3. **Does not REQUIRE an initial or runtime HTTPS context** unless the benefits (such as for encryption) justify it.
+4. Code **targets Chromium-compatible browsers**. Avoid special code for non-Chromium browsers except for simple detection and configuration.
+5. **Able to run on Windows, Mac, Linux, Android, and iOS** operating systems.
+6. **Does not have access to Wasm libraries until directed to acquire them by the user**, and then only has future access to the libraries the user specified.
+7. Be sure to include an icon so that browser errors do not occur due to missing "favicon.ico" (use placeholder names if necessary).
+
+---
+
+### **LAUNCH**
+1. Able to **launch from HTTP, HTTPS, local storage, network drives, and USB drives**.
+2. **Warn users if their device is online**.
+3. **Warn users if their browser is not fully Chromium-compatible** and is negatively affecting SafeSecrets' ability to function properly.
+4. If SafeSecrets is not installed, open the **Configuration screen**. Otherwise, open the **File Access screen** (see the **USER INTERFACE** section for screen descriptions).
+
+---
+
+### **INSTALLATION**
+1. If the user chooses to install SafeSecrets, offer **reasonable options** (e.g., menu and home screen icons for easy access).
+2. Ensure that **all necessary resources are cached** so that SafeSecrets can run offline and without USB drive access.
+
+---
+
+### **USER INTERFACE**
+
+#### **Configuration Screen**
+1. Present the user with an **[Inspect Code] button** to launch their browser's code inspection window.
+2. If the **local file access Wasm library (Emscripten FS)** is not yet cached, direct the user to acquire it.
+   - Provide buttons to [View Download Link], [Download Now], and [Browse Storage] to handle library acquisition and caching.
+3. For **encryption libraries**, allow the user to choose between **libsodium (Wasm)** and **OpenSSL (Wasm)**. 
+   - Offer the user buttons to [View Download Link], [Download Now], and [Browse Storage] for the selected library.
+4. Once an encryption library is chosen, provide the user with options to select:
+   - The **encryption method** (e.g., AES, RSA, ChaCha20, etc.) available from the chosen library.
+   - The **password hashing algorithm** (e.g., Argon2, PBKDF2, SHA-256) to generate encryption/decryption keys.
+5. Optional, depending on technical feasibility: If SafeSecrets is not installed, present the user with an **[Install] button**. If installed, this button should offer **[Uninstall]**.
+6. The last screen element is a **[Done] button**, which will close the Configuration screen and take the user to the **File Access screen**.
+
+#### **File Access Screen**
+1. **Display a static warning** if the device is online.
+2. **Display a static warning** if the browser is not fully Chromium-compatible and is negatively affecting SafeSecrets' functionality.
+3. Provide a link to open the **Configuration screen**.
+4. Provide UI features to **create, open, edit, encrypt, decrypt, and save text files**:
+   - (a) File content should be displayed in an editable text area.
+   - (b) Provide a field for the user's **encryption/decryption password**.
+   - (c) Allow the user to select the **encryption method** and **password hashing algorithm** from the ones they chose during configuration.
+   - (d) Provide a field for **displaying/editing file names**.
+   - (e) **Encryption/Decryption Confirmation**: Show a confirmation message when a file is successfully encrypted or decrypted.
+
+#### **Data Persistence**
+- All files must be saved either to **local, USB, or network storage** to ensure users can back up files to other devices. IndexedDB or cache-based storage is not acceptable for file persistence in this context unless individual files can be easily backed up, emailed, or zipped.
+
+---
+
+### **Favicon and Manifest**
+- Provide a **PWA manifest** file that includes placeholders for icons. If icons are necessary to avoid browser errors, create meaningful names for the icons, and the actual images will be added later.
+
+---
+
+### **Encryption Library Options**
+
+#### **Encryption Libraries**:
+- **libsodium (Wasm)**:
+  - **Encryption Methods**: AES, RSA, ChaCha20, Poly1305, ECDH.
+  - **Password Hashing**: Argon2 (highly secure, modern password hashing algorithm).
+  - **No HTTPS Requirement**: This library does not require HTTPS to operate.
+  - **Highly Scrutinized**: Widely used in security-critical applications and highly trusted.
+  - **Open Source**: Free and open-source (ISC License).
+
+- **OpenSSL (Wasm)**:
+  - **Encryption Methods**: AES, RSA, ECDSA, SHA-256, Diffie-Hellman, more.
+  - **Password Hashing**: PBKDF2 (widely supported, compatible with many applications).
+  - **No HTTPS Requirement**: OpenSSL compiled to Wasm does not require HTTPS.
+  - **Highly Scrutinized**: OpenSSL is one of the most widely used and scrutinized cryptographic libraries.
+  - **Open Source**: Free and open-source (OpenSSL License).
+
+Both libraries provide strong cryptographic functionality, but the user will have the flexibility to choose the one that best meets their preferences for encryption methods and password hashing algorithms.
+
+---
+
+### **Local File Access Library**
+
+#### **Emscripten FS**:
+- **Local File Access**: Provides a virtual file system that works well in a WebAssembly environment and can be cached for offline use.
+- **No HTTPS Requirement**: Emscripten FS does not require HTTPS, making it ideal for use in environments that don’t rely on secure origins.
+- **Open Source**: Free and open-source (MIT License).
+- **Highly Trusted**: Widely used in WebAssembly applications and trusted for local file handling operations.
+
+---
+
+### **Summary of Changes**
+1. **Local File Access**: We’ve selected **Emscripten FS** for file handling, which will be integrated and allow users to back up files to local, USB, or network storage.
+2. **Encryption Libraries**: The user will be able to choose between **libsodium (Wasm)** and **OpenSSL (Wasm)** for encryption, selecting both the **encryption method** and the **password hashing algorithm** (e.g., Argon2, PBKDF2).
+3. **File Access Screen**: We’ve added fields to allow the user to select their chosen encryption method and hashing algorithm for file encryption and decryption.
