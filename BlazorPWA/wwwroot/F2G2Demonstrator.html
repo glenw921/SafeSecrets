@@ -1,0 +1,377 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="F2G2 Demonstrator - Encrypt and decrypt using FIDO2 and PIV">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>F2G2 Demonstrator</title>
+    <!--<link rel="manifest" href="manifest.json">-->
+    <!--<link rel="stylesheet" href="f2g2.css">-->
+
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        header p {
+            text-align: center;
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        button {
+            width: 48%;
+            padding: 10px;
+            background-color: #007bff;
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            margin-right: 4%;
+        }
+
+            button#clearBtn {
+                background-color: #6c757d;
+            }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
+            button#clearBtn:hover {
+                background-color: #5a6268;
+            }
+
+        /* Read-Only Output Styling */
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            color: #333;
+            font-size: 0.95em;
+            white-space: pre-wrap; /* Ensures text wraps inside <pre> */
+            word-wrap: break-word;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        /* Authentication and Status Messages */
+        #auth-status, #decryption-status {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+            #auth-status.success, #decryption-status.success {
+                color: #28a745;
+            }
+
+            #auth-status.error, #decryption-status.error {
+                color: #dc3545;
+            }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+                button#clearBtn {
+                    margin-right: 0;
+                }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>F2G2 Demonstrator</h1>
+        <p>Encryption and decryption with FIDO2/PIV</p>
+    </header>
+
+    <!-- Plain Text Input Section -->
+    <section>
+        <label for="plaintext">Enter Plain Text:</label>
+        <input type="text" id="plaintext" placeholder="Type your secret message here">
+    </section>
+
+    <!-- PIN Input Section (dynamically displayed) -->
+    <section id="pin-section" style="display: none;">
+        <label for="pin">Enter FIDO2 PIN:</label>
+        <input type="password" id="pin" placeholder="Enter PIN">
+    </section>
+
+    <!-- User Verification Prompt -->
+    <section id="user-prompt">
+        <p>Please verify using your FIDO2 device.</p>
+    </section>
+
+    <!-- Encryption and Decryption Controls -->
+    <section>
+        <button id="encryptBtn">Encrypt Text</button>
+        <button id="decryptBtn">Decrypt Text</button>
+    </section>
+
+    <!-- Display Symmetric Encryption Key (SEK), Encrypted and Decrypted Text -->
+    <section>
+        <p><strong>Generated Symmetric Encryption Key (SEK):</strong></p>
+        <pre id="generated-sec"></pre>
+
+        <p><strong>Encrypted SEK:</strong></p>
+        <pre id="encrypted-sec"></pre>
+
+        <p><strong>Encrypted Text:</strong></p>
+        <pre id="encrypted-text"></pre>
+
+        <p><strong>Decrypted SEK:</strong></p>
+        <pre id="decrypted-sec"></pre>
+
+        <p><strong>Decrypted Text:</strong></p>
+        <pre id="decrypted-text"></pre>
+    </section>
+
+    <!-- Authentication and Decryption Status -->
+    <section>
+        <p id="auth-status"></p>
+        <p id="decryption-status"></p>
+    </section>
+
+    <!-- Clear Button to Reset Form -->
+    <section>
+        <button id="clearBtn">Clear</button>
+    </section>
+
+    <script>
+        // DOM Elements
+        const plaintextInput = document.getElementById('plaintext');
+        const pinInput = document.getElementById('pin');
+        const pinSection = document.getElementById('pin-section');
+        const authStatus = document.getElementById('auth-status');
+        const decryptionStatus = document.getElementById('decryption-status');
+        const encryptBtn = document.getElementById('encryptBtn');
+        const decryptBtn = document.getElementById('decryptBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const generatedSec = document.getElementById('generated-sec');
+        const encryptedSec = document.getElementById('encrypted-sec');
+        const encryptedText = document.getElementById('encrypted-text');
+        const decryptedSec = document.getElementById('decrypted-sec');
+        const decryptedText = document.getElementById('decrypted-text');
+
+        // Symmetric Encryption Key (S.E.C.)
+        let symmetricKey;
+        let encryptedSymmetricKey;
+        let decryptedSymmetricKey;
+
+        // Utility to clear the form and reset the UI
+        function clearForm() {
+            plaintextInput.value = '';
+            pinInput.value = '';
+            generatedSec.textContent = '';
+            encryptedSec.textContent = '';
+            encryptedText.textContent = '';
+            decryptedSec.textContent = '';
+            decryptedText.textContent = '';
+            authStatus.textContent = '';
+            decryptionStatus.textContent = '';
+            pinSection.style.display = 'none';
+        }
+
+        // Generate a random Symmetric Encryption Key (AES-GCM)
+        async function generateSymmetricKey() {
+            try {
+                return await crypto.subtle.generateKey(
+                    { name: "AES-GCM", length: 256 },
+                    true, // extractable
+                    ["encrypt", "decrypt"]
+                );
+            } catch (err) {
+                console.error("Error generating symmetric key:", err);
+            }
+        }
+
+        // Encrypt the provided text using the Symmetric Encryption Key (AES-GCM)
+        async function encryptText(text, key) {
+            try {
+                const encoder = new TextEncoder();
+                const encodedText = encoder.encode(text);
+                const iv = crypto.getRandomValues(new Uint8Array(12)); // 12-byte IV for AES-GCM
+
+                const ciphertext = await crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv },
+                    key,
+                    encodedText
+                );
+
+                // Return the ciphertext and IV
+                return { ciphertext, iv };
+            } catch (err) {
+                console.error("Error encrypting text:", err);
+            }
+        }
+
+        // Decrypt the encrypted text using the Symmetric Encryption Key (AES-GCM)
+        async function decryptText(ciphertext, iv, key) {
+            try {
+                const decrypted = await crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv },
+                    key,
+                    ciphertext
+                );
+                const decoder = new TextDecoder();
+                return decoder.decode(decrypted);
+            } catch (err) {
+                console.error("Error decrypting text:", err);
+            }
+        }
+
+        // Simulate encrypting the symmetric key using FIDO2 (PIV Applet)
+        async function encryptSymmetricKeyWithFIDO2(key) {
+            // In a real-world scenario, you would use the PIV applet to encrypt the key
+            // For now, we'll simulate encrypting the key
+            const keyData = await crypto.subtle.exportKey('raw', key);
+            // Normally you'd send this to FIDO2 for encryption, we'll simulate it here
+            return btoa(String.fromCharCode(...new Uint8Array(keyData))); // Simulate base64 encryption
+        }
+
+        // Simulate decrypting the symmetric key using FIDO2 (PIV Applet)
+        async function decryptSymmetricKeyWithFIDO2(encryptedKey) {
+            // In a real-world scenario, you would use the PIV applet to decrypt the key
+            // For now, we'll simulate decrypting the key
+            const keyData = Uint8Array.from(atob(encryptedKey), c => c.charCodeAt(0));
+            return await crypto.subtle.importKey(
+                'raw', keyData,
+                { name: "AES-GCM" },
+                true, ["encrypt", "decrypt"]
+            );
+        }
+
+        // Check if the FIDO2 device requires PIN or on-device authentication
+        async function checkFIDO2Capabilities() {
+            try {
+                // Simulate calling WebAuthn to check capabilities
+                const options = {
+                    publicKey: {
+                        challenge: new Uint8Array(32), // Random challenge
+                        rp: { name: "F2G2 Demonstrator" },
+                        user: { id: new Uint8Array(16), name: "demo", displayName: "Demo User" },
+                        pubKeyCredParams: [{ alg: -7, type: "public-key" }]
+                    }
+                };
+
+                // Simulate querying a FIDO2 device for authenticator details
+                const credentials = await navigator.credentials.create(options);
+                // For simplicity, we'll toggle showing the PIN section for external PIN entry
+                if (credentials.authenticatorAttachment === 'cross-platform') {
+                    pinSection.style.display = 'block'; // Show PIN input
+                } else {
+                    pinSection.style.display = 'none'; // Use on-device touch or fingerprint
+                }
+
+                return credentials;
+            } catch (err) {
+                console.error("Error checking FIDO2 capabilities:", err);
+            }
+        }
+
+        // Handle Encryption Process
+        encryptBtn.addEventListener('click', async () => {
+            const plaintext = plaintextInput.value;
+            if (!plaintext) {
+                alert("Please enter some plain text to encrypt.");
+                return;
+            }
+
+            // Check FIDO2 device capabilities
+            await checkFIDO2Capabilities();
+
+            // Generate Symmetric Encryption Key (S.E.C.)
+            symmetricKey = await generateSymmetricKey();
+            generatedSec.textContent = 'Symmetric Encryption Key (S.E.C.) generated successfully.';
+
+            // Encrypt the plain text
+            const { ciphertext, iv } = await encryptText(plaintext, symmetricKey);
+            encryptedText.textContent = `Encrypted Text: ${btoa(String.fromCharCode(...new Uint8Array(ciphertext)))}`;
+
+            // Simulate encrypting the symmetric key with FIDO2
+            encryptedSymmetricKey = await encryptSymmetricKeyWithFIDO2(symmetricKey);
+            encryptedSec.textContent = `Encrypted S.E.C.: ${encryptedSymmetricKey}`;
+
+            authStatus.textContent = "Encryption completed successfully!";
+            authStatus.classList.add("success");
+        });
+
+        // Handle Decryption Process
+        decryptBtn.addEventListener('click', async () => {
+            if (!encryptedSymmetricKey || !encryptedText.textContent) {
+                alert("Please encrypt something first.");
+                return;
+            }
+
+            // Simulate decrypting the symmetric key with FIDO2
+            decryptedSymmetricKey = await decryptSymmetricKeyWithFIDO2(encryptedSymmetricKey);
+            decryptedSec.textContent = 'Symmetric Encryption Key (S.E.C.) decrypted successfully.';
+
+            // Decode the base64 ciphertext
+            const ciphertextArray = Uint8Array.from(atob(encryptedText.textContent.split(' ')[2]), c => c.charCodeAt(0));
+
+            // Decrypt the text
+            const decrypted = await decryptText(ciphertextArray, new Uint8Array(12), decryptedSymmetricKey); // Static IV for simplicity
+            decryptedText.textContent = `Decrypted Text: ${decrypted}`;
+
+            decryptionStatus.textContent = "Decryption Success!";
+            decryptionStatus.classList.add("success");
+        });
+
+        // Handle Clear Button
+        clearBtn.addEventListener('click', clearForm);
+
+    </script>
+</body>
+</html>
