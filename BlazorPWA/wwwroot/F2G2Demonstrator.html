@@ -136,6 +136,15 @@
         <p>Encryption and decryption with FIDO2/PIV</p>
     </header>
 
+    <!-- Authentication Section -->
+    <section id="auth-section">
+        <!-- Authenticate Button -->
+        <button id="authBtn">Authenticate</button>
+
+        <!-- Authentication Status Message -->
+        <p id="auth-status">Not authenticated</p>
+    </section>
+
     <!-- Plain Text Input Section -->
     <section>
         <label for="plaintext">Enter Plain Text:</label>
@@ -150,7 +159,7 @@
 
     <!-- User Verification Prompt -->
     <section id="user-prompt">
-        <p>Please verify using your FIDO2 device.</p>
+        <p>Please authenticate using your FIDO2 device to proceed with encryption or decryption.</p>
     </section>
 
     <!-- Encryption and Decryption Controls -->
@@ -177,9 +186,8 @@
         <pre id="decrypted-text"></pre>
     </section>
 
-    <!-- Authentication and Decryption Status -->
+    <!-- Decryption Status Message -->
     <section>
-        <p id="auth-status"></p>
         <p id="decryption-status"></p>
     </section>
 
@@ -197,6 +205,7 @@
         const decryptionStatus = document.getElementById('decryption-status');
         const encryptBtn = document.getElementById('encryptBtn');
         const decryptBtn = document.getElementById('decryptBtn');
+        const authBtn = document.getElementById('authBtn');
         const clearBtn = document.getElementById('clearBtn');
         const generatedSec = document.getElementById('generated-sec');
         const encryptedSec = document.getElementById('encrypted-sec');
@@ -204,7 +213,8 @@
         const decryptedSec = document.getElementById('decrypted-sec');
         const decryptedText = document.getElementById('decrypted-text');
 
-        // Symmetric Encryption Key (S.E.C.)
+        // State management
+        let isAuthenticated = false; // Authentication cache
         let symmetricKey;
         let encryptedSymmetricKey;
         let decryptedSymmetricKey;
@@ -218,9 +228,10 @@
             encryptedText.textContent = '';
             decryptedSec.textContent = '';
             decryptedText.textContent = '';
-            authStatus.textContent = '';
+            authStatus.textContent = 'Not authenticated';
             decryptionStatus.textContent = '';
             pinSection.style.display = 'none';
+            isAuthenticated = false; // Clear authentication cache
         }
 
         // Generate a random Symmetric Encryption Key (AES-GCM)
@@ -273,17 +284,12 @@
 
         // Simulate encrypting the symmetric key using FIDO2 (PIV Applet)
         async function encryptSymmetricKeyWithFIDO2(key) {
-            // In a real-world scenario, you would use the PIV applet to encrypt the key
-            // For now, we'll simulate encrypting the key
             const keyData = await crypto.subtle.exportKey('raw', key);
-            // Normally you'd send this to FIDO2 for encryption, we'll simulate it here
             return btoa(String.fromCharCode(...new Uint8Array(keyData))); // Simulate base64 encryption
         }
 
         // Simulate decrypting the symmetric key using FIDO2 (PIV Applet)
         async function decryptSymmetricKeyWithFIDO2(encryptedKey) {
-            // In a real-world scenario, you would use the PIV applet to decrypt the key
-            // For now, we'll simulate decrypting the key
             const keyData = Uint8Array.from(atob(encryptedKey), c => c.charCodeAt(0));
             return await crypto.subtle.importKey(
                 'raw', keyData,
@@ -295,7 +301,6 @@
         // Check if the FIDO2 device requires PIN or on-device authentication
         async function checkFIDO2Capabilities() {
             try {
-                // Simulate calling WebAuthn to check capabilities
                 const options = {
                     publicKey: {
                         challenge: new Uint8Array(32), // Random challenge
@@ -307,7 +312,7 @@
 
                 // Simulate querying a FIDO2 device for authenticator details
                 const credentials = await navigator.credentials.create(options);
-                // For simplicity, we'll toggle showing the PIN section for external PIN entry
+
                 if (credentials.authenticatorAttachment === 'cross-platform') {
                     pinSection.style.display = 'block'; // Show PIN input
                 } else {
@@ -320,6 +325,27 @@
             }
         }
 
+        // Handle Authentication Process
+        authBtn.addEventListener('click', async () => {
+            try {
+                const credentials = await checkFIDO2Capabilities();
+                if (credentials) {
+                    isAuthenticated = true;
+                    authStatus.textContent = "Authentication Successful!";
+                    authStatus.classList.add("success");
+                } else {
+                    isAuthenticated = false;
+                    authStatus.textContent = "Authentication Failed!";
+                    authStatus.classList.add("error");
+                }
+            } catch (err) {
+                isAuthenticated = false;
+                authStatus.textContent = "Error during authentication!";
+                authStatus.classList.add("error");
+                console.error("Authentication error:", err);
+            }
+        });
+
         // Handle Encryption Process
         encryptBtn.addEventListener('click', async () => {
             const plaintext = plaintextInput.value;
@@ -328,12 +354,14 @@
                 return;
             }
 
-            // Check FIDO2 device capabilities
-            await checkFIDO2Capabilities();
+            if (!isAuthenticated) {
+                alert("Please authenticate first by clicking [Authenticate].");
+                return;
+            }
 
-            // Generate Symmetric Encryption Key (S.E.C.)
+            // Generate Symmetric Encryption Key (SEK)
             symmetricKey = await generateSymmetricKey();
-            generatedSec.textContent = 'Symmetric Encryption Key (S.E.C.) generated successfully.';
+            generatedSec.textContent = 'Symmetric Encryption Key (SEK) generated successfully.';
 
             // Encrypt the plain text
             const { ciphertext, iv } = await encryptText(plaintext, symmetricKey);
@@ -341,7 +369,7 @@
 
             // Simulate encrypting the symmetric key with FIDO2
             encryptedSymmetricKey = await encryptSymmetricKeyWithFIDO2(symmetricKey);
-            encryptedSec.textContent = `Encrypted S.E.C.: ${encryptedSymmetricKey}`;
+            encryptedSec.textContent = `Encrypted SEK: ${encryptedSymmetricKey}`;
 
             authStatus.textContent = "Encryption completed successfully!";
             authStatus.classList.add("success");
@@ -354,9 +382,14 @@
                 return;
             }
 
+            if (!isAuthenticated) {
+                alert("Please authenticate first by clicking [Authenticate].");
+                return;
+            }
+
             // Simulate decrypting the symmetric key with FIDO2
             decryptedSymmetricKey = await decryptSymmetricKeyWithFIDO2(encryptedSymmetricKey);
-            decryptedSec.textContent = 'Symmetric Encryption Key (S.E.C.) decrypted successfully.';
+            decryptedSec.textContent = 'Symmetric Encryption Key (SEK) decrypted successfully.';
 
             // Decode the base64 ciphertext
             const ciphertextArray = Uint8Array.from(atob(encryptedText.textContent.split(' ')[2]), c => c.charCodeAt(0));
@@ -371,7 +404,6 @@
 
         // Handle Clear Button
         clearBtn.addEventListener('click', clearForm);
-
     </script>
 </body>
 </html>
