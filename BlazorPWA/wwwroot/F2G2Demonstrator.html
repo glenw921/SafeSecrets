@@ -152,8 +152,8 @@
     </section>
 
     <!-- PIN Input Section (dynamically displayed) -->
-    <section id="pin-section" style="display: none;">
-        <label for="pin">Enter FIDO2 PIN:</label>
+    <section id="pin-section" style="display: block;">
+        <label for="pin">FIDO2 Device PIV PIN:</label>
         <input type="password" id="pin" placeholder="Enter PIN">
     </section>
 
@@ -200,9 +200,7 @@
         // DOM Elements
         const plaintextInput = document.getElementById('plaintext');
         const pinInput = document.getElementById('pin');
-        const pinSection = document.getElementById('pin-section');
         const authStatus = document.getElementById('auth-status');
-        const decryptionStatus = document.getElementById('decryption-status');
         const encryptBtn = document.getElementById('encryptBtn');
         const decryptBtn = document.getElementById('decryptBtn');
         const authBtn = document.getElementById('authBtn');
@@ -218,6 +216,7 @@
         let symmetricKey;
         let encryptedSymmetricKey;
         let decryptedSymmetricKey;
+        let credentialId; // Store Credential ID for future authentication
 
         // Utility to clear the form and reset the UI
         function clearForm() {
@@ -229,126 +228,101 @@
             decryptedSec.textContent = '';
             decryptedText.textContent = '';
             authStatus.textContent = 'Not authenticated';
-            decryptionStatus.textContent = '';
-            pinSection.style.display = 'none';
             isAuthenticated = false; // Clear authentication cache
+            credentialId = null; // Clear stored credential ID
         }
 
-        // Generate a random Symmetric Encryption Key (AES-GCM)
-        async function generateSymmetricKey() {
+        // Helper function to simulate PIV PIN validation (for now, replace later)
+        async function verifyPivPin(pivPin) {
+            return pivPin === "123456"; // Example PIN validation (replace with real PIV logic)
+        }
+
+        // TODO: Find out how we will remember/determine the "Credential ID" for the next time F2G2 Demonstrator is run and the necessary credentials have already been created on Y5Ci for localhost.
+
+        // Check for existing FIDO2 credential and authenticate
+        async function checkFIDO2Credentials() {
             try {
-                return await crypto.subtle.generateKey(
-                    { name: "AES-GCM", length: 256 },
-                    true, // extractable
-                    ["encrypt", "decrypt"]
-                );
+                // If credentialId is available, attempt to authenticate using it
+                if (credentialId) {
+                    const options = {
+                        publicKey: {
+                            challenge: new Uint8Array(32), // Random challenge for authentication
+                            allowCredentials: [{
+                                type: "public-key",
+                                id: credentialId, // Use the stored credential ID
+                                transports: ["usb", "nfc", "ble"]
+                            }]
+                        }
+                    };
+
+                    const credentials = await navigator.credentials.get(options);
+
+                    if (credentials) {
+                        // Authentication successful
+                        isAuthenticated = true;
+                        authStatus.textContent = "Authentication Successful!";
+                        authStatus.classList.add("success");
+                        console.log("Authenticated using existing credential:", credentials);
+                    } else {
+                        throw new Error("No existing credential found.");
+                    }
+                } else {
+                    throw new Error("No credential ID stored.");
+                }
             } catch (err) {
-                console.error("Error generating symmetric key:", err);
+                console.error("Error during authentication or no credential found:", err);
+                authStatus.textContent = "No existing credential found. Registering new one...";
+                authStatus.classList.add("info");
+
+                // If no credential exists, create a new one
+                await registerFido2Credential();
             }
         }
 
-        // Encrypt the provided text using the Symmetric Encryption Key (AES-GCM)
-        async function encryptText(text, key) {
-            try {
-                const encoder = new TextEncoder();
-                const encodedText = encoder.encode(text);
-                const iv = crypto.getRandomValues(new Uint8Array(12)); // 12-byte IV for AES-GCM
-
-                const ciphertext = await crypto.subtle.encrypt(
-                    { name: "AES-GCM", iv },
-                    key,
-                    encodedText
-                );
-
-                // Return the ciphertext and IV
-                return { ciphertext, iv };
-            } catch (err) {
-                console.error("Error encrypting text:", err);
-            }
-        }
-
-        // Decrypt the encrypted text using the Symmetric Encryption Key (AES-GCM)
-        async function decryptText(ciphertext, iv, key) {
-            try {
-                const decrypted = await crypto.subtle.decrypt(
-                    { name: "AES-GCM", iv },
-                    key,
-                    ciphertext
-                );
-                const decoder = new TextDecoder();
-                return decoder.decode(decrypted);
-            } catch (err) {
-                console.error("Error decrypting text:", err);
-            }
-        }
-
-        // Simulate encrypting the symmetric key using FIDO2 (PIV Applet)
-        async function encryptSymmetricKeyWithFIDO2(key) {
-            const keyData = await crypto.subtle.exportKey('raw', key);
-            return btoa(String.fromCharCode(...new Uint8Array(keyData))); // Simulate base64 encryption
-        }
-
-        // Simulate decrypting the symmetric key using FIDO2 (PIV Applet)
-        async function decryptSymmetricKeyWithFIDO2(encryptedKey) {
-            const keyData = Uint8Array.from(atob(encryptedKey), c => c.charCodeAt(0));
-            return await crypto.subtle.importKey(
-                'raw', keyData,
-                { name: "AES-GCM" },
-                true, ["encrypt", "decrypt"]
-            );
-        }
-
-        // Check if the FIDO2 device requires PIN or on-device authentication
-        async function checkFIDO2Capabilities() {
+        // Function to register a new FIDO2 credential (if no credential exists)
+        async function registerFido2Credential() {
             try {
                 const options = {
                     publicKey: {
-                        challenge: new Uint8Array(32), // Random challenge
-                        rp: { name: "F2G2 Demonstrator" },
-                        user: { id: new Uint8Array(16), name: "demo", displayName: "Demo User" },
-                        pubKeyCredParams: [{ alg: -7, type: "public-key" }]
+                        challenge: new Uint8Array(32), // Random challenge for registration
+                        rp: { name: "F2G2 Demonstrator", id: "localhost" }, // Relaying party (localhost)
+                        user: {
+                            id: new Uint8Array(16), // User ID (should be unique)
+                            name: "user@example.com",
+                            displayName: "User"
+                        },
+                        pubKeyCredParams: [
+                            { type: "public-key", alg: -7 }, // ES256 algorithm
+                            { type: "public-key", alg: -257 } // RS256 algorithm
+                        ]
                     }
                 };
 
-                // Simulate querying a FIDO2 device for authenticator details
-                const credentials = await navigator.credentials.create(options);
+                const credential = await navigator.credentials.create(options);
 
-                if (credentials.authenticatorAttachment === 'cross-platform') {
-                    pinSection.style.display = 'block'; // Show PIN input
+                if (credential) {
+                    console.log("Credential registered successfully:", credential);
+                    authStatus.textContent = "Registration successful!";
+                    authStatus.classList.add("success");
+
+                    // Store the Credential ID for future authentication
+                    credentialId = new Uint8Array(credential.rawId); // Save the credential ID
+                    console.log("Stored Credential ID:", credentialId);
                 } else {
-                    pinSection.style.display = 'none'; // Use on-device touch or fingerprint
+                    throw new Error("Failed to create a new credential.");
                 }
-
-                return credentials;
             } catch (err) {
-                console.error("Error checking FIDO2 capabilities:", err);
+                console.error("Error during credential registration:", err);
+                authStatus.textContent = "Error during credential registration!";
+                authStatus.classList.add("error");
             }
         }
 
-        // Handle Authentication Process
-        authBtn.addEventListener('click', async () => {
-            try {
-                const credentials = await checkFIDO2Capabilities();
-                if (credentials) {
-                    isAuthenticated = true;
-                    authStatus.textContent = "Authentication Successful!";
-                    authStatus.classList.add("success");
-                } else {
-                    isAuthenticated = false;
-                    authStatus.textContent = "Authentication Failed!";
-                    authStatus.classList.add("error");
-                }
-            } catch (err) {
-                isAuthenticated = false;
-                authStatus.textContent = "Error during authentication!";
-                authStatus.classList.add("error");
-                console.error("Authentication error:", err);
-            }
-        });
-
-        // Handle Encryption Process
+        // Handle Encryption Process (with PIV PIN)
         encryptBtn.addEventListener('click', async () => {
             const plaintext = plaintextInput.value;
+            const pivPin = pinInput.value; // Get the PIV PIN entered by the user
+
             if (!plaintext) {
                 alert("Please enter some plain text to encrypt.");
                 return;
@@ -359,24 +333,50 @@
                 return;
             }
 
-            // Generate Symmetric Encryption Key (SEK)
-            symmetricKey = await generateSymmetricKey();
-            generatedSec.textContent = 'Symmetric Encryption Key (SEK) generated successfully.';
+            if (!pivPin) {
+                alert("Please enter your PIV PIN.");
+                return;
+            }
+
+            // Simulate sending PIV PIN to unlock PIV applet (for example purposes)
+            const pivPinValid = await verifyPivPin(pivPin); // Simulate PIV PIN validation
+            if (!pivPinValid) {
+                alert("Invalid PIV PIN. Please try again.");
+                return;
+            }
+
+            // Generate Symmetric Encryption Key (S.E.C.)
+            symmetricKey = await crypto.subtle.generateKey(
+                { name: "AES-GCM", length: 256 },
+                true, ["encrypt", "decrypt"]
+            );
+            generatedSec.textContent = 'Symmetric Encryption Key (S.E.C.) generated successfully.';
 
             // Encrypt the plain text
-            const { ciphertext, iv } = await encryptText(plaintext, symmetricKey);
+            const encoder = new TextEncoder();
+            const encodedText = encoder.encode(plaintext);
+            const iv = crypto.getRandomValues(new Uint8Array(12)); // 12-byte IV for AES-GCM
+
+            const ciphertext = await crypto.subtle.encrypt(
+                { name: "AES-GCM", iv },
+                symmetricKey,
+                encodedText
+            );
+
             encryptedText.textContent = `Encrypted Text: ${btoa(String.fromCharCode(...new Uint8Array(ciphertext)))}`;
 
-            // Simulate encrypting the symmetric key with FIDO2
-            encryptedSymmetricKey = await encryptSymmetricKeyWithFIDO2(symmetricKey);
-            encryptedSec.textContent = `Encrypted SEK: ${encryptedSymmetricKey}`;
+            // Simulate encrypting the symmetric key with FIDO2 (PIV applet)
+            encryptedSymmetricKey = await crypto.subtle.exportKey('raw', symmetricKey);
+            encryptedSec.textContent = `Encrypted S.E.C.: ${btoa(String.fromCharCode(...new Uint8Array(encryptedSymmetricKey)))}`;
 
             authStatus.textContent = "Encryption completed successfully!";
             authStatus.classList.add("success");
         });
 
-        // Handle Decryption Process
+        // Handle Decryption Process (with PIV PIN)
         decryptBtn.addEventListener('click', async () => {
+            const pivPin = pinInput.value; // Get the PIV PIN entered by the user
+
             if (!encryptedSymmetricKey || !encryptedText.textContent) {
                 alert("Please encrypt something first.");
                 return;
@@ -387,20 +387,45 @@
                 return;
             }
 
-            // Simulate decrypting the symmetric key with FIDO2
-            decryptedSymmetricKey = await decryptSymmetricKeyWithFIDO2(encryptedSymmetricKey);
-            decryptedSec.textContent = 'Symmetric Encryption Key (SEK) decrypted successfully.';
+            if (!pivPin) {
+                alert("Please enter your PIV PIN.");
+                return;
+            }
+
+            // Simulate sending PIV PIN to unlock PIV applet (for example purposes)
+            const pivPinValid = await verifyPivPin(pivPin); // Simulate PIV PIN validation
+            if (!pivPinValid) {
+                alert("Invalid PIV PIN. Please try again.");
+                return;
+            }
+
+            // Simulate decrypting the symmetric key with FIDO2 (PIV applet)
+            decryptedSymmetricKey = await crypto.subtle.importKey(
+                'raw',
+                Uint8Array.from(atob(encryptedSymmetricKey), c => c.charCodeAt(0)),
+                { name: "AES-GCM" },
+                true, ["encrypt", "decrypt"]
+            );
+            decryptedSec.textContent = 'Symmetric Encryption Key (S.E.C.) decrypted successfully.';
 
             // Decode the base64 ciphertext
             const ciphertextArray = Uint8Array.from(atob(encryptedText.textContent.split(' ')[2]), c => c.charCodeAt(0));
 
             // Decrypt the text
-            const decrypted = await decryptText(ciphertextArray, new Uint8Array(12), decryptedSymmetricKey); // Static IV for simplicity
-            decryptedText.textContent = `Decrypted Text: ${decrypted}`;
+            const decrypted = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: new Uint8Array(12) },
+                decryptedSymmetricKey,
+                ciphertextArray
+            );
+            const decoder = new TextDecoder();
+            decryptedText.textContent = `Decrypted Text: ${decoder.decode(decrypted)}`;
 
-            decryptionStatus.textContent = "Decryption Success!";
-            decryptionStatus.classList.add("success");
+            authStatus.textContent = "Decryption completed successfully!";
+            authStatus.classList.add("success");
         });
+
+        // Handle Authentication Button
+        authBtn.addEventListener('click', checkFIDO2Credentials);
 
         // Handle Clear Button
         clearBtn.addEventListener('click', clearForm);
