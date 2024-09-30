@@ -117,6 +117,10 @@
                 color: #dc3545;
             }
 
+            #auth-status.info, #decryption-status.info {
+                color: #333;
+            }
+
         /* Responsive Design */
         @media (max-width: 600px) {
             button {
@@ -186,9 +190,9 @@
         <pre id="decrypted-text"></pre>
     </section>
 
-    <!-- Decryption Status Message -->
+    <!-- Encryption/Decryption Status Message -->
     <section>
-        <p id="decryption-status"></p>
+        <p id="cipher-status"></p>
     </section>
 
     <!-- Clear Button to Reset Form -->
@@ -197,6 +201,10 @@
     </section>
 
     <script>
+        // TODO: Be smarter about handling the kinds of authentication offered by browser/OS. Ex; On Windows, either (A) figure out how to use Windows Hello Face/Pin, or (B) warn/prevent users from using them.
+        // TODO: Find out how we will remember/determine the "Credential ID" for the next time F2G2 Demonstrator is run and the necessary credentials have already been created on Y5Ci for localhost.
+        // TODO: Enable the use of multiple FIDO2 devices (e.g. primary and backup). Must store multiple Credential IDs and figure out which one to use for an authentication.
+
         // DOM Elements
         const plaintextInput = document.getElementById('plaintext');
         const pinInput = document.getElementById('pin');
@@ -210,13 +218,29 @@
         const encryptedText = document.getElementById('encrypted-text');
         const decryptedSec = document.getElementById('decrypted-sec');
         const decryptedText = document.getElementById('decrypted-text');
+        const cipherStatus = document.getElementById('cipher-status');
 
         // State management
-        let isAuthenticated = false; // Authentication cache
+        let isAuthenticated = false; // Authentication register
         let symmetricKey;
         let encryptedSymmetricKey;
         let decryptedSymmetricKey;
         let credentialId; // Store Credential ID for future authentication
+
+        // Utility function to update the authentication status message and color
+        function updateAuthStatus(message, statusClass, isAuthnd) {
+            authStatus.className = ''; // Clear all classes (prior statusClasses)
+            authStatus.classList.add(statusClass); // Add the new class to change text color            
+            authStatus.textContent = message; // Update the text message
+            isAuthenticated = isAuthnd; // Update the authentication status
+        }
+
+        // Utility function to update the encryption/decryption status message and color
+        function updateCipherStatus(message, statusClass) {
+            cipherStatus.className = ''; // Clear all classes (prior statusClasses)
+            cipherStatus.classList.add(statusClass); // Add the new class to change text color            
+            cipherStatus.textContent = message; // Update the text message
+        }
 
         // Utility to clear the form and reset the UI
         function clearForm() {
@@ -227,8 +251,10 @@
             encryptedText.textContent = '';
             decryptedSec.textContent = '';
             decryptedText.textContent = '';
-            authStatus.textContent = 'Not authenticated';
-            isAuthenticated = false; // Clear authentication cache
+
+            updateAuthStatus('Not authenticated', 'info', false);
+            updateCipherStatus('', 'info');
+
             credentialId = null; // Clear stored credential ID
         }
 
@@ -237,16 +263,23 @@
             return pivPin === "123456"; // Example PIN validation (replace with real PIV logic)
         }
 
-        // TODO: Find out how we will remember/determine the "Credential ID" for the next time F2G2 Demonstrator is run and the necessary credentials have already been created on Y5Ci for localhost.
+
+        // Generate a cryptographically secure challenge for FIDO2
+        function generateSecureChallenge() {
+            return crypto.getRandomValues(new Uint8Array(32));  // 32-byte cryptographically secure random value
+        }
+
 
         // Check for existing FIDO2 credential and authenticate
         async function checkFIDO2Credentials() {
-            try {
-                // If credentialId is available, attempt to authenticate using it
-                if (credentialId) {
+            if (credentialId) {
+                // Existing credential should be available, attempt to authenticate using it.
+                try {
                     const options = {
                         publicKey: {
-                            challenge: new Uint8Array(32), // Random challenge for authentication
+                            challenge: generateSecureChallenge(), 
+                            //challenge: new Uint8Array(32), // Random challenge for authentication
+
                             allowCredentials: [{
                                 type: "public-key",
                                 id: credentialId, // Use the stored credential ID
@@ -255,41 +288,39 @@
                         }
                     };
 
-                    const credentials = await navigator.credentials.get(options);
+                    const credentials = await navigator.credentials.get(options); // Call to browser/OS authentication system.
 
                     if (credentials) {
                         // Authentication successful
-                        isAuthenticated = true;
-                        authStatus.textContent = "Authentication Successful!";
-                        authStatus.classList.add("success");
                         console.log("Authenticated using existing credential:", credentials);
+                        updateAuthStatus('Authentication Successful!', 'success', true);
                     } else {
-                        throw new Error("No existing credential found.");
+                        // Authentication failed
+                        throw new Error("Existing credential expected, but not found, on FIDO2 device.");
                     }
-                } else {
-                    throw new Error("No credential ID stored.");
+                } catch (err) {
+                    console.error("Error during authentication:", err);
+                    updateAuthStatus('Failed to authenticate existing credential. See console log.', 'error', false);
                 }
-            } catch (err) {
-                console.error("Error during authentication or no credential found:", err);
-                authStatus.textContent = "No existing credential found. Registering new one...";
-                authStatus.classList.add("info");
-
-                // If no credential exists, create a new one
+            } else {
+                // No credential exists, create a new one
                 await registerFido2Credential();
             }
         }
 
-        // Function to register a new FIDO2 credential (if no credential exists)
+        // Function to register a new FIDO2 credential (only call if no credential exists)
         async function registerFido2Credential() {
             try {
                 const options = {
                     publicKey: {
-                        challenge: new Uint8Array(32), // Random challenge for registration
+                        challenge: generateSecureChallenge(),
+                        //challenge: new Uint8Array(32), // Random challenge for registration
+
                         rp: { name: "F2G2 Demonstrator", id: "localhost" }, // Relaying party (localhost)
                         user: {
                             id: new Uint8Array(16), // User ID (should be unique)
-                            name: "user@example.com",
-                            displayName: "User"
+                            name: "anonymous@none.com", // TODO: Is this required? If so, why and what for?
+                            displayName: "Anonymous" // TODO: Is this required? If so, why and what for?
                         },
                         pubKeyCredParams: [
                             { type: "public-key", alg: -7 }, // ES256 algorithm
@@ -298,12 +329,12 @@
                     }
                 };
 
-                const credential = await navigator.credentials.create(options);
+                const credential = await navigator.credentials.create(options); // Call to browser/OS authentication system.
 
                 if (credential) {
+                    // Authentication successful
                     console.log("Credential registered successfully:", credential);
-                    authStatus.textContent = "Registration successful!";
-                    authStatus.classList.add("success");
+                    updateAuthStatus('New registration successful!', 'success', true);
 
                     // Store the Credential ID for future authentication
                     credentialId = new Uint8Array(credential.rawId); // Save the credential ID
@@ -313,8 +344,7 @@
                 }
             } catch (err) {
                 console.error("Error during credential registration:", err);
-                authStatus.textContent = "Error during credential registration!";
-                authStatus.classList.add("error");
+                updateAuthStatus('New credential registration FAILED!', 'error', false);
             }
         }
 
@@ -345,12 +375,12 @@
                 return;
             }
 
-            // Generate Symmetric Encryption Key (S.E.C.)
+            // Generate Symmetric Encryption Key (SEK)
             symmetricKey = await crypto.subtle.generateKey(
                 { name: "AES-GCM", length: 256 },
                 true, ["encrypt", "decrypt"]
             );
-            generatedSec.textContent = 'Symmetric Encryption Key (S.E.C.) generated successfully.';
+            generatedSec.textContent = 'Symmetric Encryption Key (SEK) generated successfully.';
 
             // Encrypt the plain text
             const encoder = new TextEncoder();
@@ -367,10 +397,9 @@
 
             // Simulate encrypting the symmetric key with FIDO2 (PIV applet)
             encryptedSymmetricKey = await crypto.subtle.exportKey('raw', symmetricKey);
-            encryptedSec.textContent = `Encrypted S.E.C.: ${btoa(String.fromCharCode(...new Uint8Array(encryptedSymmetricKey)))}`;
+            encryptedSec.textContent = `Encrypted SEK: ${btoa(String.fromCharCode(...new Uint8Array(encryptedSymmetricKey)))}`;
 
-            authStatus.textContent = "Encryption completed successfully!";
-            authStatus.classList.add("success");
+            updateCipherStatus('Encryption completed successfully!', 'success');
         });
 
         // Handle Decryption Process (with PIV PIN)
@@ -406,7 +435,7 @@
                 { name: "AES-GCM" },
                 true, ["encrypt", "decrypt"]
             );
-            decryptedSec.textContent = 'Symmetric Encryption Key (S.E.C.) decrypted successfully.';
+            decryptedSec.textContent = 'Symmetric Encryption Key (SEK) decrypted successfully.';
 
             // Decode the base64 ciphertext
             const ciphertextArray = Uint8Array.from(atob(encryptedText.textContent.split(' ')[2]), c => c.charCodeAt(0));
@@ -420,8 +449,7 @@
             const decoder = new TextDecoder();
             decryptedText.textContent = `Decrypted Text: ${decoder.decode(decrypted)}`;
 
-            authStatus.textContent = "Decryption completed successfully!";
-            authStatus.classList.add("success");
+            updateCipherStatus('Decryption completed successfully!', 'success');
         });
 
         // Handle Authentication Button
