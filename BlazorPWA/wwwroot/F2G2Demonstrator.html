@@ -155,7 +155,7 @@
         <input type="text" id="plaintext" placeholder="Type your secret message here">
     </section>
 
-    <!-- PIN Input Section (dynamically displayed) -->
+    <!-- PIN Input Section -->
     <section id="pin-section" style="display: block;">
         <label for="pin">FIDO2 Device PIV PIN:</label>
         <input type="password" id="pin" placeholder="Enter PIN">
@@ -203,7 +203,7 @@
     <script>
         // TODO: Be smarter about handling the kinds of authentication offered by browser/OS. Ex; On Windows, either (A) figure out how to use Windows Hello Face/Pin, or (B) warn/prevent users from using them.
         // TODO: Find out how we will remember/determine the "Credential ID" for the next time F2G2 Demonstrator is run and the necessary credentials have already been created on Y5Ci for localhost.
-        // TODO: Enable the use of multiple FIDO2 devices (e.g. primary and backup). Must store multiple Credential IDs and figure out which one to use for an authentication.
+        // TODO: Enable the use of multiple FIDO2 devices (e.g. primary and backup).
 
         // DOM Elements
         const plaintextInput = document.getElementById('plaintext');
@@ -256,11 +256,6 @@
             updateCipherStatus('', 'info');
 
             credentialId = null; // Clear stored credential ID
-        }
-
-        // Helper function to simulate PIV PIN validation (for now, replace later)
-        async function verifyPivPin(pivPin) {
-            return pivPin === "123456"; // Example PIN validation (replace with real PIV logic)
         }
 
 
@@ -346,6 +341,11 @@
                 console.error("Error during credential registration:", err);
                 updateAuthStatus('New credential registration FAILED!', 'error', false);
             }
+        }
+
+        // Helper function to simulate PIV PIN validation (for now, replace later)
+        async function verifyPivPin(pivPin) {
+            return pivPin === "123456"; // Example PIN validation (replace with real PIV logic)
         }
 
         // Handle Encryption Process (with PIV PIN)
